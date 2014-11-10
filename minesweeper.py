@@ -3,12 +3,11 @@ from pygame.locals import *  # for keypress constants
 import random
 from colors import *  # for color constants
 
-"""
-Cell states:
-unknown /  revealed
-"""
 
 class Cell:
+    """
+    Cell class is used to track the cells' state, drawing info, and number of neighbors
+    """
     def __init__(self, row, col):
         self.revealed = False
         self.is_mine = False
@@ -21,8 +20,10 @@ class Cell:
         return "Cell[%d][%d]" % (self.row, self.col)
 
 
-
 class Minesweeper:
+    """
+    Main game application
+    """
     def __init__(self, filename=None, width=600, height=600, rows=8, cols=8):
 
         # pygame setup
@@ -42,17 +43,16 @@ class Minesweeper:
         # draw the starting board
         self.draw_board()
 
-        # enter event loop
+        # enter event loop, wait for player input
         self.loop()
 
 
-
-    """
-    Gameboard drawing functions
-    """
     def create_game_board(self, rows, cols, mines, cell_margin=0):
-
-        # create empty board
+        """
+        Create the initial game board and populate with mines.
+        :return: board - list of lists of Cell objects
+        """
+        # empty board
         board = [[None for i in xrange(cols)] for i in xrange(rows)]
 
         # calculate positions of cells
@@ -85,7 +85,7 @@ class Minesweeper:
                     for nj in neighbor_offsets:
                         # do not count this (center) cell
                         if not ((ni == 0) and (nj == 0)):
-                            # do not wrap around the board with pythons -1 indices:
+                            # do not wrap around the board with python's -1 indices:
                             if (i + ni < 0) or (i + ni > rows) or (j + nj < 0) or (j + nj > cols):
                                 pass
                             else:
@@ -94,7 +94,6 @@ class Minesweeper:
                                 except IndexError:
                                     # if there are no neighbors on this side, continue
                                     pass
-
         return board
 
 
@@ -114,27 +113,29 @@ class Minesweeper:
                 elif (self.board[i][j].revealed == True) and (self.board[i][j].is_mine == False):
                     # revealed and empty, gray
                     color = gray
-                print i, j
+                # draw the cell                
                 pygame.draw.rect(self.screen, color, self.board[i][j].rect, 0)
 
-                # if the cell is not a mine, revealed and has neighbors, show the neighbor count
-                if  (self.board[i][j].is_mine == False) and (self.board[i][j].revealed == True) and (self.board[i][j].neighbors > 0):
-                    # if (self.board[i][j].is_mine == False) and (self.board[i][j].neighbors > 0):
-                    font_size = 20
-                    # label_text = "(%d, %d): %d" % (i, j, self.board[i][j].neighbors)
+                # if the cell is not a mine, is revealed and has neighbors, show the neighbor count
+                if  (self.board[i][j].is_mine == False) and (self.board[i][j].revealed == True) and (self.board[i][j].neighbors > 0):                
+                    font_size = 20                    
                     label_text = "%d" % (self.board[i][j].neighbors)
                     label_font = pygame.font.SysFont('Arial', font_size)
                     label = label_font.render(label_text, 1, green)
                     self.screen.blit(label, (self.board[i][j].rect.x, self.board[i][j].rect.y))
 
+        # update screen
         pygame.display.flip()
 
 
     def reveal_cell(self, row, col):
-        print "Revealing cell", row, col
-        cell = self.board[row][col]
-        print cell.is_mine
-
+        """
+        Mark a cell as revealed and if it's not a mine 
+        either display its neighbor count or reveal its empty neighbors.
+        :param row: int, row index for cell to reveal in board
+        :param col: int, col index for cell to reveal in board
+        """
+        cell = self.board[row][col]        
         if cell.is_mine == True:
             print "You lose! Final Score: ", self.score
             cell.revealed = True
@@ -153,6 +154,11 @@ class Minesweeper:
 
 
     def reveal_neighbors(self, row, col):
+        """
+        Recursive function that marks all adjacent unrevealed empty cells as revealed
+        :param row: int, row index for cell in board
+        :param col: int, col index for cell in board
+        """
         # calculate neighbor values for each cell
         neighbor_offsets = range(-1,2,1)
         for ni in neighbor_offsets:
@@ -176,7 +182,7 @@ class Minesweeper:
 
 
     """
-    Pygame Setup and Event Functions
+    # Pygame Setup and Event Functions
     """
 
     def setup_screen(self):
