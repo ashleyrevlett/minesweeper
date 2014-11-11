@@ -39,11 +39,8 @@ class Minesweeper:
         self.bomb_locs = list()
         self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
 
-<<<<<<< HEAD
-=======
         #scoreboard assets
         self.button_icon = None
->>>>>>> origin/master
 
         # draw the starting board; also draws scores
         self.draw_board()
