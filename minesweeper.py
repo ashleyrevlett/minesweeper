@@ -150,15 +150,14 @@ class Minesweeper:
         self.loop()
 
 
-    def reset_game(self):
-
+    def game_over(self):
         # reveal all cells
         for i in xrange(self.rows):
             for j in xrange(self.cols):
                 self.board[i][j].revealed = True
         self.draw_board()
 
-        # wait for user to hit enter
+        # wait for user to hit enter or click button
         paused = True
         print "Hit enter to play again"
         while paused:
@@ -169,14 +168,26 @@ class Minesweeper:
                     if event.key == K_ESCAPE:
                         paused = False
                         self._running = False
-
+                elif event.type == MOUSEBUTTONUP:
+                    # left-click
+                    if event.button == 1:
+                        # did they click the icon button?
+                        x,y = event.pos
+                        if self.button_icon.rect.collidepoint(x,y):
+                            paused = False
         if self._running:
-            # reset score and draw new board
-            self.score = 0
-            self.start_time = time.time()
-            self.time_elapsed = 0
-            self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
-            self.draw_board()
+            # if user hasn't tried to exit, start a new game
+            self.reset_game()
+
+
+    def reset_game(self):
+        # reset score and draw new board
+        self.lost_game = False
+        self.score = 0
+        self.start_time = time.time()
+        self.time_elapsed = 0
+        self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
+        self.draw_board()
 
 
     def create_game_board(self, rows, cols, mines, cell_margin=0):
@@ -282,8 +293,6 @@ class Minesweeper:
 
 
 
-
-
     def flag_cell(self, i, j):
         if self.board[i][j].flagged == True:
             self.board[i][j].flagged = False
@@ -304,7 +313,7 @@ class Minesweeper:
             print "You lose! Final Score: ", self.score
             cell.revealed = True
             self.lost_game = True
-            self.reset_game()
+            self.game_over()
         elif cell.neighbors > 0:
             # cell has a neighbor # value, show it
             cell.revealed = True
@@ -399,11 +408,14 @@ class Minesweeper:
                     # left click reveals a cell
                     x,y = event.pos
                     print "You clicked", x, y
-                    for i in xrange(self.rows):
-                        for j in xrange(self.cols):
-                            cell_rect = self.board[i][j].rect
-                            if cell_rect.collidepoint(x,y):
-                                self.reveal_cell(i, j)
+                    if self.button_icon.rect.collidepoint(x,y):
+                        self.reset_game()
+                    else:
+                        for i in xrange(self.rows):
+                            for j in xrange(self.cols):
+                                cell_rect = self.board[i][j].rect
+                                if cell_rect.collidepoint(x,y):
+                                    self.reveal_cell(i, j)
             # right click
             elif event.button == 3:
                 print 'right click'
