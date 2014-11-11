@@ -150,9 +150,20 @@ class Minesweeper:
                 board[i][j] = cell
 
         # add mines to random cells
+        # have to track which mines have been added so we don't duplicate them
+        random_mines = []
         for m in xrange(mines):
+            # try getting a random mine
             rand_row = random.randint(0, rows-1)
             rand_col = random.randint(0, cols-1)
+            random_mine = (rand_row, rand_col)
+            # if it's already been mined, try again until you get an unmined one
+            while random_mine in random_mines:
+                rand_row = random.randint(0, rows-1)
+                rand_col = random.randint(0, cols-1)
+                random_mine = (rand_row, rand_col)
+            # add mine to bookkeeping list, set  as mined
+            random_mines.append(random_mine)
             self.bomb_locs.append([rand_row, rand_col])
             board[rand_row][rand_col].is_mine = True
 
