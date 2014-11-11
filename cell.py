@@ -9,6 +9,7 @@ class Cell:
     def __init__(self, row, col, screen):
         self.revealed = False
         self.is_mine = False
+        self.detonated = False
         self.flagged = False # flagged = user thinks a bomb is here
         self.rect = None  # used by pygame for click collisions
         self.neighbors = 0
@@ -22,16 +23,41 @@ class Cell:
     def draw(self):
         """
         Draw the cell. Appearance depends on stage and # neighbors
+
+        detonated bomb                -> red bomb icon
+        revealed non-flagged non-bomb -> empty or neighbor #
+        revealed non-flagged bomb     -> bomb icon
+        revealed flagged bomb         -> flag icon
+        revealed flagged non-bomb     -> bomb-x icon
+        unrevealed flagged            -> flag icon
+        unrevealed                    -> gray square
+
         """
-        if (self.flagged):
-            self.draw_flag()
-        elif (self.revealed == False):
-            self.draw_unrevealed_cell()
-        elif (self.revealed == True) and (self.is_mine == True):
-            self.draw_mine()
-        elif (self.revealed == True) and (self.is_mine == False):
-            # revealed and empty, gray with lighter border
+        if self.detonated:
+            self.draw_detonated_mine()
+        elif self.revealed and not self.flagged and not self.is_mine:
             self.draw_revealed_cell()
+        elif self.revealed and not self.flagged and self.is_mine:
+            self.draw_mine()
+        elif self.revealed and self.flagged and self.is_mine:
+            self.draw_flag()
+        elif self.revealed and self.flagged and not self.is_mine:
+            self.draw_mine_error()
+        elif not self.revealed and self.flagged:
+            self.draw_flag()
+        else:
+            self.draw_unrevealed_cell()
+
+    def draw_detonated_mine(self):
+        pygame.draw.rect(self.screen, (255,0,0), self.rect, 0)
+        icon = pygame.sprite.Sprite() # create sprite
+        icon.image = pygame.image.load("assets/images/mine_red_32.png").convert() # load flagimage
+        # place icon in center of cell
+        inset = 8
+        icon.rect = icon.image.get_rect() # use image extent values
+        icon.rect.topleft = [self.rect.x + inset, self.rect.y + inset] # put the sprite in the top left corner
+        self.screen.blit(icon.image, icon.rect)
+
 
 
     def draw_flag(self):
@@ -102,8 +128,18 @@ class Cell:
             label = label_font.render(label_text, 1, font_color)
             self.screen.blit(label, (self.rect.x + text_inset, self.rect.y + text_inset))
 
+    def draw_mine_error(self):
+        icon = pygame.sprite.Sprite() # create sprite
+        icon.image = pygame.image.load("assets/images/mine_x_32.png").convert() # load flagimage
+        # place icon in center of cell
+        inset = 8
+        icon.rect = icon.image.get_rect() # use image extent values
+        icon.rect.topleft = [self.rect.x + inset, self.rect.y + inset] # put the sprite in the top left corner
+        self.screen.blit(icon.image, icon.rect)
+
+
 
     def __str__(self):
-        return "Cell[%d][%d]" % (self.row, self.col)
+        return "Cell[%d][%d]: Mine - %r" % (self.row, self.col, self.is_mine)
 
 
