@@ -145,6 +145,31 @@ class Minesweeper:
         self.loop()
 
 
+    def reset_game(self):
+
+        # reveal all cells
+        for i in xrange(self.rows):
+            for j in xrange(self.cols):
+                self.board[i][j].revealed = True
+        self.draw_board()
+
+        # wait for user to hit enter
+        paused = True
+        print "Hit enter to play again"
+        while paused:
+            for event in pygame.event.get():
+                if event.type == KEYDOWN:
+                    if event.key == K_RETURN:
+                        paused = False
+
+        # reset score and draw new board
+        self.score = 0
+        self.start_time = time.time()
+        self.time_elapsed = 0
+        self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
+        self.draw_board()
+
+
     def create_game_board(self, rows, cols, mines, cell_margin=0):
         """
         Create the initial game board and populate with mines.
@@ -227,7 +252,6 @@ class Minesweeper:
         self.screen.blit(time_label, (self.width - (text_inset+50), text_inset))
 
 
-
     def flag_cell(self, i, j):
         if self.board[i][j].flagged == True:
             self.board[i][j].flagged = False
@@ -247,6 +271,7 @@ class Minesweeper:
         if cell.is_mine == True:
             print "You lose! Final Score: ", self.score
             cell.revealed = True
+            self.reset_game()
         elif cell.neighbors > 0:
             # cell has a neighbor # value, show it
             cell.revealed = True
@@ -256,9 +281,6 @@ class Minesweeper:
             cell.revealed = True
             self.score += 1
             self.reveal_neighbors(row, col)
-
-        # draw updated board
-        self.draw_board()
 
 
     def reveal_neighbors(self, row, col):
