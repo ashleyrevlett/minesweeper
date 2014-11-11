@@ -2,6 +2,7 @@ import pygame
 from pygame.locals import *  # for keypress constants
 import random
 from colors import *  # for color constants
+import time
 import controller
 
 
@@ -114,7 +115,7 @@ class Minesweeper:
     """
     Main game application
     """
-    def __init__(self, filename=None, width=400, height=400, rows=8, cols=8, mines=6):
+    def __init__(self, filename=None, width=400, height=444, rows=8, cols=8, mines=6):
 
         # pygame setup
         self._running = True # used in game loop
@@ -123,6 +124,9 @@ class Minesweeper:
 
         # scorekeeping
         self.score = 0
+        self.start_time = time.time()
+        self.time_elapsed = 0
+        self.header_height = 44
 
         # gameboard setup
         self.rows = rows
@@ -131,7 +135,7 @@ class Minesweeper:
         self.mines = mines
         self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
 
-        # draw the starting board
+        # draw the starting board; also draws scores
         self.draw_board()
 
         # choose random start point
@@ -151,7 +155,7 @@ class Minesweeper:
 
         # calculate positions of cells
         cell_size_w = int((self.width - (self.cols * cell_margin)) / self.cols)
-        cell_size_h = int((self.height - (self.rows * cell_margin)) / self.rows)
+        cell_size_h = int((self.height - self.header_height - (self.rows * cell_margin)) / self.rows)
         self.cell_size = min(cell_size_h, cell_size_w)
 
         # populate board with cells
@@ -159,7 +163,7 @@ class Minesweeper:
             for j in xrange(cols):
                 cell = Cell(i, j, self.screen)
                 # cell.revealed = True
-                ypos = (self.cell_size * i) + (cell_margin * i)
+                ypos = self.header_height + (self.cell_size * i) + (cell_margin * i)
                 xpos = (self.cell_size * j) + (cell_margin * j)
                 rect = Rect(xpos, ypos, self.cell_size, self.cell_size)
                 cell.rect = rect
@@ -199,8 +203,29 @@ class Minesweeper:
             for j in xrange(self.cols):
                 # draw the cell
                 self.board[i][j].draw()
-        # update screen
-        pygame.display.flip()
+        self.draw_score() # update scoreboard
+        pygame.display.flip() # update screen
+
+
+    def draw_score(self):
+        # draw bg rect
+        score_rect = Rect(0, 0, self.width, self.header_height)
+        pygame.draw.rect(self.screen, bg_gray, score_rect, 0)
+
+        # draw labels
+        font_color = red
+        font_size = 22
+        text_inset = 5
+        label_font = pygame.font.SysFont('Courier', font_size, bold=True)
+
+        # score
+        score_label = label_font.render(str(self.score), 1, font_color)
+        self.screen.blit(score_label, (text_inset, text_inset))
+
+        # timer
+        time_label = label_font.render(str(int(self.time_elapsed)), 1, font_color)
+        self.screen.blit(time_label, (self.width - (text_inset+50), text_inset))
+
 
 
     def flag_cell(self, i, j):
@@ -285,8 +310,11 @@ class Minesweeper:
         """
         self._running = True
         while (self._running):
+            now = time.time()
+            self.time_elapsed = now - self.start_time
             for event in pygame.event.get():
                 self.on_event(event)
+            self.draw_board()
 
 
     def on_event(self, event):
