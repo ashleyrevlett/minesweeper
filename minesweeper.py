@@ -162,13 +162,17 @@ class Minesweeper:
                 if event.type == KEYDOWN:
                     if event.key == K_RETURN:
                         paused = False
+                    if event.key == K_ESCAPE:
+                        paused = False
+                        self._running = False
 
-        # reset score and draw new board
-        self.score = 0
-        self.start_time = time.time()
-        self.time_elapsed = 0
-        self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
-        self.draw_board()
+        if self._running:
+            # reset score and draw new board
+            self.score = 0
+            self.start_time = time.time()
+            self.time_elapsed = 0
+            self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
+            self.draw_board()
 
 
     def create_game_board(self, rows, cols, mines, cell_margin=0):
