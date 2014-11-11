@@ -128,6 +128,7 @@ class Minesweeper:
         self.start_time = time.time()
         self.time_elapsed = 0
         self.header_height = 44
+        self.lost_game = False
 
         # gameboard setup
         self.rows = rows
@@ -135,6 +136,9 @@ class Minesweeper:
         self.cell_margin = 1
         self.mines = mines
         self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
+
+        #scoreboard assets
+        self.button_icon = None
 
         # draw the starting board; also draws scores
         self.draw_board()
@@ -257,6 +261,28 @@ class Minesweeper:
         time_label = label_font.render(time_text, 1, font_color)
         self.screen.blit(time_label, (self.width - (text_inset+50), text_inset))
 
+        # button
+        # cache sprite on first creation
+        if self.button_icon == None:
+            self.button_icon = pygame.sprite.Sprite() # create sprite
+            self.button_icon.image = pygame.image.load("assets/images/button_smile.png").convert() # load flagimage
+        # place icon in center of header
+        self.button_icon.rect = self.button_icon.image.get_rect() # use image extent values
+        self.button_icon.rect.topleft = [self.width/2 - self.button_icon.rect.width/2,
+                                         self.header_height/2 - self.button_icon.rect.height/2]
+        self.screen.blit(self.button_icon.image, self.button_icon.rect)
+
+        # draw the winning or losing icon
+        if self.lost_game == True:
+            icon = pygame.sprite.Sprite() # create sprite
+            icon.image = pygame.image.load("assets/images/button_frown.png").convert() # load flagimage
+            icon.rect = icon.image.get_rect() # use image extent values
+            icon.rect.topleft = [self.width/2 - self.button_icon.rect.width/2, self.header_height/2 - icon.rect.height/2]
+            self.screen.blit(icon.image, icon.rect)
+
+
+
+
 
     def flag_cell(self, i, j):
         if self.board[i][j].flagged == True:
@@ -277,6 +303,7 @@ class Minesweeper:
         if cell.is_mine == True:
             print "You lose! Final Score: ", self.score
             cell.revealed = True
+            self.lost_game = True
             self.reset_game()
         elif cell.neighbors > 0:
             # cell has a neighbor # value, show it
