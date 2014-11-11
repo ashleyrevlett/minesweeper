@@ -122,24 +122,31 @@ class Minesweeper:
         self.size = self.width, self.height = width, height
         self.screen = self.setup_screen()
 
+
         # scorekeeping
         self.score = 0
         self.start_time = time.time()
         self.time_elapsed = 0
         self.header_height = 44
 
+        # check if user has won
+        self.total_to_reveal = (rows * cols) - mines
+        self.total_revealed = 0
+
         # gameboard setup
         self.rows = rows
         self.cols = cols
         self.cell_margin = 1
         self.mines = mines
+        self.bomb_locs = list()
         self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
+
 
         # draw the starting board; also draws scores
         self.draw_board()
 
-        # choose random start point
-        #controller.start_game(self, self.board)
+        # computer starts playing
+        #controller.play_game(self, self.board, self.score, self.bomb_locs)
 
         # enter event loop, wait for player input
         self.loop()
@@ -198,6 +205,7 @@ class Minesweeper:
         for m in xrange(mines):
             rand_row = random.randint(0, rows-1)
             rand_col = random.randint(0, cols-1)
+            self.bomb_locs.append([rand_row, rand_col])
             board[rand_row][rand_col].is_mine = True
 
         # calculate neighbor values for each cell
@@ -275,11 +283,19 @@ class Minesweeper:
         elif cell.neighbors > 0:
             # cell has a neighbor # value, show it
             cell.revealed = True
+            self.total_revealed += 1
+            if self.total_revealed == self.total_to_reveal:
+                print "You won! Final Score: ", self.score
+                self.reset_game()
             self.score += 1
         else:
             # cell is empty, reveal all empty neighbors
             cell.revealed = True
             self.score += 1
+            self.total_revealed += 1
+            if self.total_revealed == self.total_to_reveal:
+                print "You won! Final Score: ", self.score
+                self.reset_game()
             self.reveal_neighbors(row, col)
 
 
@@ -304,6 +320,10 @@ class Minesweeper:
                             cell = self.board[row+ni][col+nj]
                             if cell.revealed == False:
                                 cell.revealed = True
+                                self.total_revealed += 1
+                                if self.total_revealed == self.total_to_reveal:
+                                    print "You won! Final Score: ", self.score
+                                    self.reset_game()
                                 if cell.neighbors == 0 and cell.is_mine == False:
                                     self.reveal_neighbors(row+ni, col+nj)
                         except IndexError:
