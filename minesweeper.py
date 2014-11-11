@@ -11,20 +11,89 @@ class Cell:
     def __init__(self, row, col):
         self.revealed = False
         self.is_mine = False
+        self.flagged = False # flagged = user thinks a bomb is here
         self.rect = None  # used by pygame for click collisions
         self.neighbors = 0
         self.row = row
         self.col = col
+        self.flag_icon = None
 
     def __str__(self):
         return "Cell[%d][%d]" % (self.row, self.col)
+
+    def draw(self, screen):
+        """
+        Draw the cell. Appearance depends on stage and # neighbors
+        """
+
+        if (self.flagged):
+            # if flagged by user, draw flag sprite
+            # cache flag sprite on first creation
+            if self.flag_icon == None:
+                self.flag_icon = pygame.sprite.Sprite() # create sprite
+                self.flag_icon.image = pygame.image.load("images/flag_32.png").convert() # load flagimage
+            # place flag in center of cell
+            flag_inset = 8
+            self.flag_icon.rect = self.flag_icon.image.get_rect() # use image extent values
+            self.flag_icon.rect.topleft = [self.rect.x + flag_inset, self.rect.y + flag_inset] # put the ball in the top left corner
+            screen.blit(self.flag_icon.image, self.flag_icon.rect)
+
+        elif (self.revealed == False):
+            # if not revealed, cell is gray with highlight and shadow
+            pygame.draw.rect(screen, bg_gray, self.rect, 0)
+            line_width = 2
+            # horizontal bottom shadow
+            pygame.draw.line(screen, bg_gray_dark,
+                             (self.rect.x, self.rect.y + self.rect.height - line_width/2),
+                             (self.rect.x + self.rect.width, self.rect.y + self.rect.height - line_width/2), line_width)
+            # vertical right shadow
+            pygame.draw.line(screen, bg_gray_dark,
+                             (self.rect.x + self.rect.width - line_width/2, self.rect.y),
+                             (self.rect.x + self.rect.width - line_width/2, self.rect.y + self.rect.height), line_width)
+            # horizontal top highlight
+            pygame.draw.line(screen, white,
+                             (self.rect.x, self.rect.y + line_width/2 - 1),
+                             (self.rect.x + self.rect.width - line_width, self.rect.y + line_width/2 - 1), line_width)
+            # vertical left highlight
+            pygame.draw.line(screen, white,
+                             (self.rect.x + line_width/2 - 1, self.rect.y),
+                             (self.rect.x + line_width/2 - 1, self.rect.y + self.rect.height - line_width), line_width)
+
+        elif (self.revealed == True) and (self.is_mine == True):
+            # revealed and a mine, cell is red
+            pygame.draw.rect(screen, red, self.rect, 0)
+
+        elif (self.revealed == True) and (self.is_mine == False):
+            # revealed and empty, gray with lighter border
+            pygame.draw.rect(screen, (170,170,170), self.rect, 0)
+
+        # if the cell is not a mine, is revealed and has neighbors, and isn't flagged, show the neighbor count
+        if (self.is_mine == False) and (self.revealed == True) and (self.neighbors > 0) and not self.flagged:
+            # font color is based on neighbor count
+            font_color = black
+            if self.neighbors == 1:
+                font_color = blue
+            if self.neighbors == 2:
+                font_color = green
+            if self.neighbors == 3:
+                font_color = red
+            if self.neighbors == 4:
+                font_color = purple
+
+            font_size = 22
+            text_inset = 5
+            label_text = "%d" % (self.neighbors)
+            label_font = pygame.font.SysFont('Arial', font_size)
+            label = label_font.render(label_text, 1, font_color)
+            screen.blit(label, (self.rect.x + text_inset, self.rect.y + text_inset))
+
 
 
 class Minesweeper:
     """
     Main game application
     """
-    def __init__(self, filename=None, width=600, height=600, rows=8, cols=8):
+    def __init__(self, filename=None, width=400, height=400, rows=8, cols=8, mines=6):
 
         # pygame setup
         self._running = True # used in game loop
@@ -38,7 +107,8 @@ class Minesweeper:
         self.rows = rows
         self.cols = cols
         self.cell_margin = 1
-        self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=10, cell_margin=self.cell_margin)
+        self.mines = mines
+        self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
 
         # draw the starting board
         self.draw_board()
@@ -58,16 +128,16 @@ class Minesweeper:
         # calculate positions of cells
         cell_size_w = int((self.width - (self.cols * cell_margin)) / self.cols)
         cell_size_h = int((self.height - (self.rows * cell_margin)) / self.rows)
-        cell_size = min(cell_size_h, cell_size_w)
+        self.cell_size = min(cell_size_h, cell_size_w)
 
         # populate board with cells
         for i in xrange(rows):
             for j in xrange(cols):
                 cell = Cell(i, j)
                 # cell.revealed = True
-                ypos = (cell_size * i) + (cell_margin * i)
-                xpos = (cell_size * j) + (cell_margin * j)
-                rect = Rect(xpos, ypos, cell_size, cell_size)
+                ypos = (self.cell_size * i) + (cell_margin * i)
+                xpos = (self.cell_size * j) + (cell_margin * j)
+                rect = Rect(xpos, ypos, self.cell_size, self.cell_size)
                 cell.rect = rect
                 board[i][j] = cell
 
@@ -103,29 +173,18 @@ class Minesweeper:
         """
         for i in xrange(self.rows):
             for j in xrange(self.cols):
-                color = white
-                if (self.board[i][j].revealed == False):
-                    # if not revealed, cell is black
-                    color = black
-                elif (self.board[i][j].revealed == True) and (self.board[i][j].is_mine == True):
-                    # revealed and a mine, cell is red
-                    color = red
-                elif (self.board[i][j].revealed == True) and (self.board[i][j].is_mine == False):
-                    # revealed and empty, gray
-                    color = gray
-                # draw the cell                
-                pygame.draw.rect(self.screen, color, self.board[i][j].rect, 0)
-
-                # if the cell is not a mine, is revealed and has neighbors, show the neighbor count
-                if  (self.board[i][j].is_mine == False) and (self.board[i][j].revealed == True) and (self.board[i][j].neighbors > 0):                
-                    font_size = 20                    
-                    label_text = "%d" % (self.board[i][j].neighbors)
-                    label_font = pygame.font.SysFont('Arial', font_size)
-                    label = label_font.render(label_text, 1, green)
-                    self.screen.blit(label, (self.board[i][j].rect.x, self.board[i][j].rect.y))
-
+                # draw the cell
+                self.board[i][j].draw(self.screen)
         # update screen
         pygame.display.flip()
+
+
+    def flag_cell(self, i, j):
+        if self.board[i][j].flagged == True:
+            self.board[i][j].flagged = False
+        else:
+            self.board[i][j].flagged = True
+        self.draw_board()
 
 
     def reveal_cell(self, row, col):
@@ -191,7 +250,7 @@ class Minesweeper:
         """
         pygame.init()
         screen = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
-        screen.fill((60, 60, 60))
+        screen.fill(bg_gray_dark)
         pygame.display.flip()
         return screen
 
@@ -221,14 +280,36 @@ class Minesweeper:
                 self._running = False
 
         # mouse events
-        elif event.type == MOUSEBUTTONUP and event.button == 1:
-            x,y = event.pos
-            print "You clicked", x, y
-            for i in xrange(self.rows):
-                for j in xrange(self.cols):
-                    cell_rect = self.board[i][j].rect
-                    if cell_rect.collidepoint(x,y):
-                        self.reveal_cell(i, j)
+        elif event.type == MOUSEBUTTONUP:
+            # left-click
+            if event.button == 1:
+                # macs don't have right click, so process control-click as right click
+                key = pygame.key.get_pressed()
+                if key[K_LCTRL]:
+                    print "Control and left click pressed"
+                    self.flag_event(event)
+                else:
+                    # left click reveals a cell
+                    x,y = event.pos
+                    print "You clicked", x, y
+                    for i in xrange(self.rows):
+                        for j in xrange(self.cols):
+                            cell_rect = self.board[i][j].rect
+                            if cell_rect.collidepoint(x,y):
+                                self.reveal_cell(i, j)
+            # right click
+            elif event.button == 3:
+                print 'right click'
+                self.flag_event(event)
+
+
+    def flag_event(self, event):
+        x,y = event.pos
+        for i in xrange(self.rows):
+            for j in xrange(self.cols):
+                cell_rect = self.board[i][j].rect
+                if cell_rect.collidepoint(x,y):
+                    self.flag_cell(i, j)
 
 
 if __name__ == "__main__":
