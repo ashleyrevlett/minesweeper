@@ -9,3 +9,6 @@ To run:
 `python minesweeper.py`
 
 Number of rows, columns, mines, and screen size are all set in the minesweeper.py file. 
+
+Credits:
+DS-Digital Font: http://www.dafont.com/ds-digital.font

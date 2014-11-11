@@ -22,8 +22,10 @@ class Cell:
         self.mine_icon = None
         self.screen = screen
 
+
     def __str__(self):
         return "Cell[%d][%d]" % (self.row, self.col)
+
 
     def draw(self):
         """
@@ -45,7 +47,7 @@ class Cell:
         # cache flag sprite on first creation
         if self.flag_icon == None:
             self.flag_icon = pygame.sprite.Sprite() # create sprite
-            self.flag_icon.image = pygame.image.load("images/flag_32.png").convert() # load flagimage
+            self.flag_icon.image = pygame.image.load("assets/images/flag_32.png").convert() # load flagimage
         # place flag in center of cell
         flag_inset = 8
         self.flag_icon.rect = self.flag_icon.image.get_rect() # use image extent values
@@ -78,7 +80,7 @@ class Cell:
     def draw_mine(self):
         if self.mine_icon == None:
             self.mine_icon = pygame.sprite.Sprite() # create sprite
-            self.mine_icon.image = pygame.image.load("images/mine_32.png").convert() # load flagimage
+            self.mine_icon.image = pygame.image.load("assets/images/mine_32.png").convert() # load flagimage
         # place icon in center of cell
         inset = 8
         self.mine_icon.rect = self.mine_icon.image.get_rect() # use image extent values
@@ -89,7 +91,6 @@ class Cell:
     def draw_revealed_cell(self):
         # all revealed cells get a solid bg rect
         pygame.draw.rect(self.screen, (170,170,170), self.rect, 0)
-
         # if the cell isn't flagged, is revealed and has neighbors, show the neighbor count
         if (self.is_mine == False) and (self.revealed == True) and (self.neighbors > 0) and not self.flagged:
             # font color is based on neighbor count
@@ -239,16 +240,17 @@ class Minesweeper:
 
         # draw labels
         font_color = red
-        font_size = 22
+        font_size = 34
         text_inset = 5
-        label_font = pygame.font.SysFont('Courier', font_size, bold=True)
+        label_font = pygame.font.Font("assets/fonts/DS-DIGIB.ttf", font_size)
 
         # score
-        score_label = label_font.render(str(self.score), 1, font_color)
+        score_text = "{:0>3d}".format(self.score) # pad score w/ 0s
+        score_label = label_font.render(score_text, 1, font_color)
         self.screen.blit(score_label, (text_inset, text_inset))
-
         # timer
-        time_label = label_font.render(str(int(self.time_elapsed)), 1, font_color)
+        time_text = "{:0>3d}".format(int(self.time_elapsed)) # pad score w/ 0s
+        time_label = label_font.render(time_text, 1, font_color)
         self.screen.blit(time_label, (self.width - (text_inset+50), text_inset))
 
 
