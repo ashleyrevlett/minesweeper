@@ -2,6 +2,7 @@ import pygame
 from pygame.locals import *  # for keypress constants
 import random
 from colors import *  # for color constants
+import controller
 
 
 class Cell:
@@ -42,6 +43,9 @@ class Minesweeper:
 
         # draw the starting board
         self.draw_board()
+
+        # choose random start point
+        #controller.start_game(self, self.board)
 
         # enter event loop, wait for player input
         self.loop()
@@ -234,4 +238,3 @@ class Minesweeper:
 if __name__ == "__main__":
     # run graph application
     app = Minesweeper()
-
