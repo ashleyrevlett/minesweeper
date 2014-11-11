@@ -17,6 +17,7 @@ class Cell:
         self.row = row
         self.col = col
         self.flag_icon = None
+        self.mine_icon = None
 
     def __str__(self):
         return "Cell[%d][%d]" % (self.row, self.col)
@@ -60,8 +61,16 @@ class Cell:
                              (self.rect.x + line_width/2 - 1, self.rect.y + self.rect.height - line_width), line_width)
 
         elif (self.revealed == True) and (self.is_mine == True):
-            # revealed and a mine, cell is red
-            pygame.draw.rect(screen, red, self.rect, 0)
+            # revealed and a mine, show mine sprite
+            # cache sprite for future draw calls
+            if self.mine_icon == None:
+                self.mine_icon = pygame.sprite.Sprite() # create sprite
+                self.mine_icon.image = pygame.image.load("images/mine_32.png").convert() # load flagimage
+            # place icon in center of cell
+            inset = 8
+            self.mine_icon.rect = self.mine_icon.image.get_rect() # use image extent values
+            self.mine_icon.rect.topleft = [self.rect.x + inset, self.rect.y + inset] # put the sprite in the top left corner
+            screen.blit(self.mine_icon.image, self.mine_icon.rect)
 
         elif (self.revealed == True) and (self.is_mine == False):
             # revealed and empty, gray with lighter border
