@@ -3,119 +3,15 @@ from pygame.locals import *  # for keypress constants
 import random
 from colors import *  # for color constants
 import time
+from cell import Cell
 import controller
-
-
-class Cell:
-    """
-    Cell class is used to track the cells' state, drawing info, and number of neighbors
-    """
-    def __init__(self, row, col, screen):
-        self.revealed = False
-        self.is_mine = False
-        self.flagged = False # flagged = user thinks a bomb is here
-        self.rect = None  # used by pygame for click collisions
-        self.neighbors = 0
-        self.row = row
-        self.col = col
-        self.flag_icon = None
-        self.mine_icon = None
-        self.screen = screen
-
-    def __str__(self):
-        return "Cell[%d][%d]" % (self.row, self.col)
-
-    def draw(self):
-        """
-        Draw the cell. Appearance depends on stage and # neighbors
-        """
-        if (self.flagged):
-            self.draw_flag()
-        elif (self.revealed == False):
-            self.draw_unrevealed_cell()
-        elif (self.revealed == True) and (self.is_mine == True):
-            self.draw_mine()
-        elif (self.revealed == True) and (self.is_mine == False):
-            # revealed and empty, gray with lighter border
-            self.draw_revealed_cell()
-
-
-    def draw_flag(self):
-        # if flagged by user, draw flag sprite
-        # cache flag sprite on first creation
-        if self.flag_icon == None:
-            self.flag_icon = pygame.sprite.Sprite() # create sprite
-            self.flag_icon.image = pygame.image.load("images/flag_32.png").convert() # load flagimage
-        # place flag in center of cell
-        flag_inset = 8
-        self.flag_icon.rect = self.flag_icon.image.get_rect() # use image extent values
-        self.flag_icon.rect.topleft = [self.rect.x + flag_inset, self.rect.y + flag_inset] # put the ball in the top left corner
-        self.screen.blit(self.flag_icon.image, self.flag_icon.rect)
-
-
-    def draw_unrevealed_cell(self):
-        # if not revealed, cell is gray with highlight and shadow
-        pygame.draw.rect(self.screen, bg_gray, self.rect, 0)
-        line_width = 2
-        # horizontal bottom shadow
-        pygame.draw.line(self.screen, bg_gray_dark,
-                         (self.rect.x, self.rect.y + self.rect.height - line_width/2),
-                         (self.rect.x + self.rect.width, self.rect.y + self.rect.height - line_width/2), line_width)
-        # vertical right shadow
-        pygame.draw.line(self.screen, bg_gray_dark,
-                         (self.rect.x + self.rect.width - line_width/2, self.rect.y),
-                         (self.rect.x + self.rect.width - line_width/2, self.rect.y + self.rect.height), line_width)
-        # horizontal top highlight
-        pygame.draw.line(self.screen, white,
-                         (self.rect.x, self.rect.y + line_width/2 - 1),
-                         (self.rect.x + self.rect.width - line_width, self.rect.y + line_width/2 - 1), line_width)
-        # vertical left highlight
-        pygame.draw.line(self.screen, white,
-                         (self.rect.x + line_width/2 - 1, self.rect.y),
-                         (self.rect.x + line_width/2 - 1, self.rect.y + self.rect.height - line_width), line_width)
-
-
-    def draw_mine(self):
-        if self.mine_icon == None:
-            self.mine_icon = pygame.sprite.Sprite() # create sprite
-            self.mine_icon.image = pygame.image.load("images/mine_32.png").convert() # load flagimage
-        # place icon in center of cell
-        inset = 8
-        self.mine_icon.rect = self.mine_icon.image.get_rect() # use image extent values
-        self.mine_icon.rect.topleft = [self.rect.x + inset, self.rect.y + inset] # put the sprite in the top left corner
-        self.screen.blit(self.mine_icon.image, self.mine_icon.rect)
-
-
-    def draw_revealed_cell(self):
-        # all revealed cells get a solid bg rect
-        pygame.draw.rect(self.screen, (170,170,170), self.rect, 0)
-
-        # if the cell isn't flagged, is revealed and has neighbors, show the neighbor count
-        if (self.is_mine == False) and (self.revealed == True) and (self.neighbors > 0) and not self.flagged:
-            # font color is based on neighbor count
-            font_color = black
-            if self.neighbors == 1:
-                font_color = blue
-            if self.neighbors == 2:
-                font_color = green
-            if self.neighbors == 3:
-                font_color = red
-            if self.neighbors == 4:
-                font_color = purple
-            font_size = 22
-            text_inset = 5
-            label_text = "%d" % (self.neighbors)
-            label_font = pygame.font.SysFont('Arial', font_size)
-            label = label_font.render(label_text, 1, font_color)
-            self.screen.blit(label, (self.rect.x + text_inset, self.rect.y + text_inset))
-
 
 
 class Minesweeper:
     """
     Main game application
     """
-    def __init__(self, filename=None, width=400, height=444, rows=8, cols=8, mines=6):
+    def __init__(self, filename=None, width=400, height=444, rows=4, cols=4, mines=4):
 
         # pygame setup
         self._running = True # used in game loop
@@ -128,6 +24,8 @@ class Minesweeper:
         self.start_time = time.time()
         self.time_elapsed = 0
         self.header_height = 44
+        self.lost_game = False
+        self.won_game = False
 
         # check if user has won
         self.total_to_reveal = (rows * cols) - mines
@@ -141,6 +39,11 @@ class Minesweeper:
         self.bomb_locs = list()
         self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
 
+<<<<<<< HEAD
+=======
+        #scoreboard assets
+        self.button_icon = None
+>>>>>>> origin/master
 
         # draw the starting board; also draws scores
         self.draw_board()
@@ -152,24 +55,72 @@ class Minesweeper:
         self.loop()
 
 
-    def reset_game(self):
+    def test_did_win(self):
+        """
+        Winning conditions:
+        All cells revealed or with flags
+        All mines have flags
+        No cells without mines have flags
+        :return: bool
+        """
+        did_win = True
+        for i in xrange(self.rows):
+            for j in xrange(self.cols):
+                cell = self.board[i][j]
+                # unrevealed and not flagged squares
+                if not cell.revealed and not cell.flagged:
+                    did_win = False
+                    break
+                # incorrect flags
+                if cell.flagged and not cell.is_mine:
+                    did_win = False
+                    break
+                # unflagged mines
+                if cell.is_mine and not cell.flagged:
+                    did_win = False
+                    break
+        if did_win:
+            self.won_game = True
+            print "You won! Final score:", self.score
 
-        # reveal all cells
+        return did_win
+
+
+    def game_over(self):
+        # unflag and reveal all cells
         for i in xrange(self.rows):
             for j in xrange(self.cols):
                 self.board[i][j].revealed = True
+                self.board[i][j].flagged = False
+        # draw final board and score states
         self.draw_board()
 
-        # wait for user to hit enter
+        # pause until user hits enter, esc, or clicks button
         paused = True
-        print "Hit enter to play again"
         while paused:
             for event in pygame.event.get():
                 if event.type == KEYDOWN:
                     if event.key == K_RETURN:
                         paused = False
+                    if event.key == K_ESCAPE:
+                        paused = False
+                        self._running = False # end game
+                elif event.type == MOUSEBUTTONUP:
+                    # left-click
+                    if event.button == 1:
+                        # did they click the icon button?
+                        x,y = event.pos
+                        if self.button_icon.rect.collidepoint(x,y):
+                            paused = False
+        if self._running:
+            # if user hasn't tried to exit, start a new game
+            self.reset_game()
 
+
+    def reset_game(self):
         # reset score and draw new board
+        self.lost_game = False
+        self.won_game = False
         self.score = 0
         self.start_time = time.time()
         self.time_elapsed = 0
@@ -241,26 +192,59 @@ class Minesweeper:
 
 
     def draw_score(self):
+        """
+        called by draw_board, don't call directly
+        """
         # draw bg rect
         score_rect = Rect(0, 0, self.width, self.header_height)
         pygame.draw.rect(self.screen, bg_gray, score_rect, 0)
 
         # draw labels
         font_color = red
-        font_size = 22
+        font_size = 34
         text_inset = 5
-        label_font = pygame.font.SysFont('Courier', font_size, bold=True)
+        label_font = pygame.font.Font("assets/fonts/DS-DIGIB.ttf", font_size)
 
         # score
-        score_label = label_font.render(str(self.score), 1, font_color)
+        score_text = "{:0>3d}".format(self.score) # pad score w/ 0s
+        score_label = label_font.render(score_text, 1, font_color)
         self.screen.blit(score_label, (text_inset, text_inset))
-
         # timer
-        time_label = label_font.render(str(int(self.time_elapsed)), 1, font_color)
+        time_text = "{:0>3d}".format(int(self.time_elapsed)) # pad score w/ 0s
+        time_label = label_font.render(time_text, 1, font_color)
         self.screen.blit(time_label, (self.width - (text_inset+50), text_inset))
+
+        # buttons
+        # draw the playing, winning or losing icon
+        if self.lost_game:
+            icon = pygame.sprite.Sprite() # create sprite
+            icon.image = pygame.image.load("assets/images/button_frown.png").convert() # load flagimage
+            icon.rect = icon.image.get_rect() # use image extent values
+            icon.rect.topleft = [self.width/2 - self.button_icon.rect.width/2, self.header_height/2 - icon.rect.height/2]
+            self.screen.blit(icon.image, icon.rect)
+        elif self.won_game:
+            icon = pygame.sprite.Sprite() # create sprite
+            icon.image = pygame.image.load("assets/images/button_glasses.png").convert() # load flagimage
+            icon.rect = icon.image.get_rect() # use image extent values
+            icon.rect.topleft = [self.width/2 - self.button_icon.rect.width/2, self.header_height/2 - icon.rect.height/2]
+            self.screen.blit(icon.image, icon.rect)
+        else:
+            if self.button_icon == None:
+                self.button_icon = pygame.sprite.Sprite() # create sprite
+                self.button_icon.image = pygame.image.load("assets/images/button_smile.png").convert() # load flagimage
+            # place icon in center of header
+            self.button_icon.rect = self.button_icon.image.get_rect() # use image extent values
+            self.button_icon.rect.topleft = [self.width/2 - self.button_icon.rect.width/2,
+                                             self.header_height/2 - self.button_icon.rect.height/2]
+            self.screen.blit(self.button_icon.image, self.button_icon.rect)
 
 
     def flag_cell(self, i, j):
+        """
+        Flags cell and redraws board when user right-clicks or control-clicks cell
+        :param i: cell row
+        :param j: cell column
+        """
         if self.board[i][j].flagged == True:
             self.board[i][j].flagged = False
         else:
@@ -279,7 +263,8 @@ class Minesweeper:
         if cell.is_mine == True:
             print "You lose! Final Score: ", self.score
             cell.revealed = True
-            self.reset_game()
+            self.lost_game = True
+            self.game_over()
         elif cell.neighbors > 0:
             # cell has a neighbor # value, show it
             cell.revealed = True
@@ -386,11 +371,16 @@ class Minesweeper:
                     # left click reveals a cell
                     x,y = event.pos
                     print "You clicked", x, y
-                    for i in xrange(self.rows):
-                        for j in xrange(self.cols):
-                            cell_rect = self.board[i][j].rect
-                            if cell_rect.collidepoint(x,y):
-                                self.reveal_cell(i, j)
+                    if self.button_icon.rect.collidepoint(x,y):
+                        self.reset_game()
+                    else:
+                        for i in xrange(self.rows):
+                            for j in xrange(self.cols):
+                                cell_rect = self.board[i][j].rect
+                                if cell_rect.collidepoint(x,y):
+                                    self.reveal_cell(i, j)
+                                    if (self.test_did_win()):
+                                        self.game_over()
             # right click
             elif event.button == 3:
                 print 'right click'
@@ -409,6 +399,8 @@ class Minesweeper:
                 cell_rect = self.board[i][j].rect
                 if cell_rect.collidepoint(x,y):
                     self.flag_cell(i, j)
+                    if (self.test_did_win()):
+                        self.game_over()
 
 
 if __name__ == "__main__":
