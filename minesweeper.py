@@ -116,7 +116,7 @@ class Minesweeper:
     """
     Main game application
     """
-    def __init__(self, filename=None, width=400, height=444, rows=8, cols=8, mines=6):
+    def __init__(self, filename=None, width=400, height=444, rows=4, cols=4, mines=4):
 
         # pygame setup
         self._running = True # used in game loop
@@ -129,6 +129,7 @@ class Minesweeper:
         self.time_elapsed = 0
         self.header_height = 44
         self.lost_game = False
+        self.won_game = False
 
         # gameboard setup
         self.rows = rows
@@ -149,17 +150,48 @@ class Minesweeper:
         # enter event loop, wait for player input
         self.loop()
 
+    def test_did_win(self):
+        """
+        Winning conditions:
+        All cells revealed or with flags
+        All mines have flags
+        No cells without mines have flags
+        :return: bool
+        """
+        did_win = True
+        for i in xrange(self.rows):
+            for j in xrange(self.cols):
+                cell = self.board[i][j]
+                # unrevealed and not flagged squares
+                if not cell.revealed and not cell.flagged:
+                    did_win = False
+                    break
+                # incorrect flags
+                if cell.flagged and not cell.is_mine:
+                    did_win = False
+                    break
+                # unflagged mines
+                if cell.is_mine and not cell.flagged:
+                    did_win = False
+                    break
+        if did_win:
+            self.won_game = True
+
+        return did_win
+
+
 
     def game_over(self):
-        # reveal all cells
+        # unflag and reveal all cells
         for i in xrange(self.rows):
             for j in xrange(self.cols):
                 self.board[i][j].revealed = True
+                self.board[i][j].flagged = False
+        # draw final board and score states
         self.draw_board()
 
-        # wait for user to hit enter or click button
+        # pause until user hits enter, esc, or clicks button
         paused = True
-        print "Hit enter to play again"
         while paused:
             for event in pygame.event.get():
                 if event.type == KEYDOWN:
@@ -167,7 +199,7 @@ class Minesweeper:
                         paused = False
                     if event.key == K_ESCAPE:
                         paused = False
-                        self._running = False
+                        self._running = False # end game
                 elif event.type == MOUSEBUTTONUP:
                     # left-click
                     if event.button == 1:
@@ -183,6 +215,7 @@ class Minesweeper:
     def reset_game(self):
         # reset score and draw new board
         self.lost_game = False
+        self.won_game = False
         self.score = 0
         self.start_time = time.time()
         self.time_elapsed = 0
@@ -253,6 +286,9 @@ class Minesweeper:
 
 
     def draw_score(self):
+        """
+        called by draw_board, don't call directly
+        """
         # draw bg rect
         score_rect = Rect(0, 0, self.width, self.header_height)
         pygame.draw.rect(self.screen, bg_gray, score_rect, 0)
@@ -272,24 +308,29 @@ class Minesweeper:
         time_label = label_font.render(time_text, 1, font_color)
         self.screen.blit(time_label, (self.width - (text_inset+50), text_inset))
 
-        # button
-        # cache sprite on first creation
-        if self.button_icon == None:
-            self.button_icon = pygame.sprite.Sprite() # create sprite
-            self.button_icon.image = pygame.image.load("assets/images/button_smile.png").convert() # load flagimage
-        # place icon in center of header
-        self.button_icon.rect = self.button_icon.image.get_rect() # use image extent values
-        self.button_icon.rect.topleft = [self.width/2 - self.button_icon.rect.width/2,
-                                         self.header_height/2 - self.button_icon.rect.height/2]
-        self.screen.blit(self.button_icon.image, self.button_icon.rect)
-
-        # draw the winning or losing icon
-        if self.lost_game == True:
+        # buttons
+        # draw the playing, winning or losing icon
+        if self.lost_game:
             icon = pygame.sprite.Sprite() # create sprite
             icon.image = pygame.image.load("assets/images/button_frown.png").convert() # load flagimage
             icon.rect = icon.image.get_rect() # use image extent values
             icon.rect.topleft = [self.width/2 - self.button_icon.rect.width/2, self.header_height/2 - icon.rect.height/2]
             self.screen.blit(icon.image, icon.rect)
+        elif self.won_game:
+            icon = pygame.sprite.Sprite() # create sprite
+            icon.image = pygame.image.load("assets/images/button_glasses.png").convert() # load flagimage
+            icon.rect = icon.image.get_rect() # use image extent values
+            icon.rect.topleft = [self.width/2 - self.button_icon.rect.width/2, self.header_height/2 - icon.rect.height/2]
+            self.screen.blit(icon.image, icon.rect)
+        else:
+            if self.button_icon == None:
+                self.button_icon = pygame.sprite.Sprite() # create sprite
+                self.button_icon.image = pygame.image.load("assets/images/button_smile.png").convert() # load flagimage
+            # place icon in center of header
+            self.button_icon.rect = self.button_icon.image.get_rect() # use image extent values
+            self.button_icon.rect.topleft = [self.width/2 - self.button_icon.rect.width/2,
+                                             self.header_height/2 - self.button_icon.rect.height/2]
+            self.screen.blit(self.button_icon.image, self.button_icon.rect)
 
 
 
@@ -416,6 +457,8 @@ class Minesweeper:
                                 cell_rect = self.board[i][j].rect
                                 if cell_rect.collidepoint(x,y):
                                     self.reveal_cell(i, j)
+                                    if (self.test_did_win()):
+                                        self.game_over()
             # right click
             elif event.button == 3:
                 print 'right click'
@@ -434,6 +477,8 @@ class Minesweeper:
                 cell_rect = self.board[i][j].rect
                 if cell_rect.collidepoint(x,y):
                     self.flag_cell(i, j)
+                    if (self.test_did_win()):
+                        self.game_over()
 
 
 if __name__ == "__main__":
