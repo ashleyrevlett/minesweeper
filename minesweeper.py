@@ -11,7 +11,7 @@ class Minesweeper:
     """
     Main game application
     """
-    def __init__(self, filename=None, width=400, height=444, rows=4, cols=4, mines=4):
+    def __init__(self, filename=None, width=400, height=444, rows=8, cols=8, mines=4):
 
         # pygame setup
         self._running = True # used in game loop
@@ -253,11 +253,13 @@ class Minesweeper:
         :param i: cell row
         :param j: cell column
         """
-        if self.board[i][j].flagged == True:
-            self.board[i][j].flagged = False
-        else:
-            self.board[i][j].flagged = True
-        self.draw_board()
+        # do not flag revealed squares
+        if not self.board[i][j].revealed:
+            if self.board[i][j].flagged == True:
+                self.board[i][j].flagged = False
+            else:
+                self.board[i][j].flagged = True
+            self.draw_board()
 
 
     def reveal_cell(self, row, col):
