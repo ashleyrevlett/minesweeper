@@ -1,5 +1,6 @@
 import pygame
 from colors import *  # for color constants
+import os
 
 
 class Cell:
@@ -18,6 +19,7 @@ class Cell:
         self.flag_icon = None
         self.mine_icon = None
         self.screen = screen
+        (self.filepath, filename) = os.path.split(os.path.realpath(__file__))
 
 
     def draw(self):
@@ -51,7 +53,8 @@ class Cell:
     def draw_detonated_mine(self):
         pygame.draw.rect(self.screen, (255,0,0), self.rect, 0)
         icon = pygame.sprite.Sprite() # create sprite
-        icon.image = pygame.image.load("assets/images/mine_red_32.png").convert() # load flagimage
+        icon_path = os.path.join(self.filepath, "assets/images/mine_red_32.png")
+        icon.image = pygame.image.load(icon_path).convert() # load flagimage
         # place icon in center of cell
         inset = 8
         icon.rect = icon.image.get_rect() # use image extent values
@@ -65,7 +68,8 @@ class Cell:
         # cache flag sprite on first creation
         if self.flag_icon == None:
             self.flag_icon = pygame.sprite.Sprite() # create sprite
-            self.flag_icon.image = pygame.image.load("assets/images/flag_32.png").convert() # load flagimage
+            icon_path = os.path.join(self.filepath, "assets/images/flag_32.png")
+            self.flag_icon.image = pygame.image.load(icon_path).convert() # load flagimage
         # place flag in center of cell
         flag_inset = 8
         self.flag_icon.rect = self.flag_icon.image.get_rect() # use image extent values
@@ -98,7 +102,8 @@ class Cell:
     def draw_mine(self):
         if self.mine_icon == None:
             self.mine_icon = pygame.sprite.Sprite() # create sprite
-            self.mine_icon.image = pygame.image.load("assets/images/mine_32.png").convert() # load flagimage
+            icon_path = os.path.join(self.filepath, "assets/images/mine_32.png")
+            self.mine_icon.image = pygame.image.load(icon_path).convert() # load flagimage
         # place icon in center of cell
         inset = 8
         self.mine_icon.rect = self.mine_icon.image.get_rect() # use image extent values
@@ -130,7 +135,8 @@ class Cell:
 
     def draw_mine_error(self):
         icon = pygame.sprite.Sprite() # create sprite
-        icon.image = pygame.image.load("assets/images/mine_x_32.png").convert() # load flagimage
+        icon_path = os.path.join(self.filepath, "assets/images/mine_x_32.png")
+        icon.image = pygame.image.load(icon_path).convert() # load flagimage
         # place icon in center of cell
         inset = 8
         icon.rect = icon.image.get_rect() # use image extent values
