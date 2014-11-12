@@ -146,6 +146,6 @@ class Cell:
 
 
     def __str__(self):
-        return "Cell[%d][%d]: Mine - %r" % (self.row, self.col, self.is_mine)
+        return "Cell[%d][%d]: Mine - %r, Mines Nearby - %d" % (self.row, self.col, self.is_mine, self.neighbors)
 
 

@@ -6,19 +6,25 @@ import time
 from cell import Cell
 import os
 import controller
+import solver
+
+"""
+Change the USE_AI constant to switch between AI and human gameplay modes.
+"""
+USE_AI = True
+NUMBER_OF_GAMES = 5 # number of games AI should autoplay
 
 
 class Minesweeper:
     """
     Main game application
     """
-    def __init__(self, filename=None, width=400, height=444, rows=8, cols=8, mines=4):
+    def __init__(self, filename=None, width=400, height=444, rows=6, cols=6, mines=3):
 
         # pygame setup
         self._running = True # used in game loop
         self.size = self.width, self.height = width, height
         self.screen = self.setup_screen()
-
 
         # scorekeeping
         self.score = 0
@@ -28,9 +34,13 @@ class Minesweeper:
         self.lost_game = False
         self.won_game = False
 
-        # check if user has won
-        self.total_to_reveal = (rows * cols) - mines
-        self.total_revealed = 0
+        # used by solvers
+        self.total_revealed = 0 # track total number of cells that have been revealed
+
+        #scoreboard assets
+        self.button_icon = None
+        # store the absolute filepath of the script; needed later to access assets by absolute path
+        self.filepath = os.path.split(os.path.realpath(__file__))[0]
 
         # gameboard setup
         self.rows = rows
@@ -40,21 +50,87 @@ class Minesweeper:
         self.bomb_locs = list()
         self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
 
-        #scoreboard assets
-        self.button_icon = None
-        # filepath needed later to access assets by absolute pathname:
-        (self.filepath, filename) = os.path.split(os.path.realpath(__file__))
+        # now play!
+        if USE_AI:
+            self.autoplay(NUMBER_OF_GAMES)
+        else:
+            self.loop()
 
 
+    @staticmethod
+    def get_neighbors(row, col, board):
+        """
+        This is a static method so it can be called using different boards.
+        Currently the Minesweeper class only stores 1 board, but in the solver
+        we need to get the neighbors of cells in many different board configurations.
+        To call it, use the class not the instance.
+        :param row: row index of the cell whose neighbors we want to retrieve
+        :param col: col index of the cell
+        :param board: instance of the board list of lists of cells
+        :return: list of cell object
+        """
+        neighbors = []
+        rows = len(board)
+        cols = len(board[0])
+        # calculate rows and columns values for each neighboring cell
+        neighbor_offsets = range(-1,2,1)
+        for ni in neighbor_offsets:
+            for nj in neighbor_offsets:
+                # do not count this (center) cell
+                if not ((ni == 0) and (nj == 0)):
+                    # do not wrap around the board with pythons -1 indices:
+                    if (row + ni < 0) or (row + ni > rows) or (col + nj < 0) or (col + nj > cols):
+                        pass
+                    else:
+                        try:
+                            # try to add the neighbor to the list
+                            cell = board[row+ni][col+nj]
+                            neighbors.append(cell)
+                        except IndexError:
+                            # but if there are no neighbors on this side of the cell, continue
+                            # like if we are on the edge of the board
+                            pass
+        return neighbors
 
-        # draw the starting board; also draws scores
-        self.draw_board()
 
-        # computer starts playing
-        #controller.play_game(self, self.board, self.score, self.bomb_locs)
+    @staticmethod
+    def print_board_state(board):
+        """
+        Prints the state of any board. Used for debugging.
+        :param game: instance of minesweeper's board (list of list of cells)
+        """
+        # find cell surrounded by revealed 1s
+        rows = len(board)
+        cols = len(rows[0])
+        for i in xrange(rows):
+            for j in xrange(cols):
+                neighbors = Minesweeper.get_neighbors(i,j,board)
+                print board[i][j]
+                for n in neighbors:
+                    print '\t', n
+                print ""
 
-        # enter event loop, wait for player input
-        self.loop()
+
+    def autoplay(self, times_to_play):
+        """
+        Automatically play minesweeper a certain number of times.
+        Currently only has random method, but could allow for selection of other methods.
+        :param times_to_play: int
+        :return:
+        """
+        for i in range(times_to_play):
+            print "\n### Playthrough", i
+
+            # draw the starting board; also draws scores
+            self.draw_board()
+
+            # computer starts playing
+            s = solver.Solver()
+            s.play_randomly(self)
+
+            # a new board is automatically created when the game is reset
+            self.reset_game()
+
 
 
     def test_did_win(self):
@@ -84,7 +160,6 @@ class Minesweeper:
         if did_win:
             self.won_game = True
             print "You won! Final score:", self.score
-
         return did_win
 
 
@@ -93,30 +168,6 @@ class Minesweeper:
         for i in xrange(self.rows):
             for j in xrange(self.cols):
                 self.board[i][j].revealed = True
-                # self.board[i][j].flagged = False
-        # draw final board and score states
-        self.draw_board()
-
-        # pause until user hits enter, esc, or clicks button
-        paused = True
-        while paused:
-            for event in pygame.event.get():
-                if event.type == KEYDOWN:
-                    if event.key == K_RETURN:
-                        paused = False
-                    if event.key == K_ESCAPE:
-                        paused = False
-                        self._running = False # end game
-                elif event.type == MOUSEBUTTONUP:
-                    # left-click
-                    if event.button == 1:
-                        # did they click the icon button?
-                        x,y = event.pos
-                        if self.button_icon.rect.collidepoint(x,y):
-                            paused = False
-        if self._running:
-            # if user hasn't tried to exit, start a new game
-            self.reset_game()
 
 
     def reset_game(self):
@@ -124,6 +175,7 @@ class Minesweeper:
         self.lost_game = False
         self.won_game = False
         self.score = 0
+        self.total_revealed = 0 # used by the solver
         self.start_time = time.time()
         self.time_elapsed = 0
         self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
@@ -175,20 +227,12 @@ class Minesweeper:
         # calculate neighbor values for each cell
         for i in xrange(rows):
             for j in xrange(cols):
-                neighbor_offsets = range(-1,2,1)
-                for ni in neighbor_offsets:
-                    for nj in neighbor_offsets:
-                        # do not count this (center) cell
-                        if not ((ni == 0) and (nj == 0)):
-                            # do not wrap around the board with python's -1 indices:
-                            if (i + ni < 0) or (i + ni > rows) or (j + nj < 0) or (j + nj > cols):
-                                pass
-                            else:
-                                try:
-                                    if board[i+ni][j+nj].is_mine: board[i][j].neighbors += 1
-                                except IndexError:
-                                    # if there are no neighbors on this side, continue
-                                    pass
+                # get this cell's neighbors
+                cell = board[i][j]
+                neighbors = Minesweeper.get_neighbors(i, j, board)
+                for n in neighbors:
+                    if n.is_mine: cell.neighbors += 1
+
         return board
 
 
@@ -270,7 +314,8 @@ class Minesweeper:
                 self.board[i][j].flagged = False
             else:
                 self.board[i][j].flagged = True
-            self.draw_board()
+        if (self.test_did_win()):
+            self.game_over()
 
 
     def reveal_cell(self, row, col):
@@ -280,7 +325,8 @@ class Minesweeper:
         :param row: int, row index for cell to reveal in board
         :param col: int, col index for cell to reveal in board
         """
-        cell = self.board[row][col]        
+        cell = self.board[row][col]
+        self.total_revealed += 1
         if cell.is_mine == True:
             print "You lose! Final Score: ", self.score
             cell.revealed = True
@@ -290,19 +336,11 @@ class Minesweeper:
         elif cell.neighbors > 0:
             # cell has a neighbor # value, show it
             cell.revealed = True
-            self.total_revealed += 1
-            if self.total_revealed == self.total_to_reveal:
-                print "You won! Final Score: ", self.score
-                # self.reset_game()
             self.score += 1
         else:
             # cell is empty, reveal all empty neighbors
             cell.revealed = True
             self.score += 1
-            self.total_revealed += 1
-            if self.total_revealed == self.total_to_reveal:
-                print "You won! Final Score: ", self.score
-                # self.reset_game()
             self.reveal_neighbors(row, col)
 
 
@@ -312,30 +350,14 @@ class Minesweeper:
         :param row: int, row index for cell in board
         :param col: int, col index for cell in board
         """
-        # calculate neighbor values for each cell
-        neighbor_offsets = range(-1,2,1)
-        for ni in neighbor_offsets:
-            for nj in neighbor_offsets:
-                # do not count this (center) cell
-                if not ((ni == 0) and (nj == 0)):
-                    # do not wrap around the board with pythons -1 indices:
-                    if (row + ni < 0) or (row + ni > self.rows) or (col + nj < 0) or (col + nj > self.cols):
-                        pass
-                    else:
-                        try:
-                            # if not revealed yet, reveal it and reveal its neighbors
-                            cell = self.board[row+ni][col+nj]
-                            if cell.revealed == False:
-                                cell.revealed = True
-                                self.total_revealed += 1
-                                if self.total_revealed == self.total_to_reveal:
-                                    print "You won! Final Score: ", self.score
-                                    # self.reset_game()
-                                if cell.neighbors == 0 and cell.is_mine == False:
-                                    self.reveal_neighbors(row+ni, col+nj)
-                        except IndexError:
-                            # if there are no neighbors on this side of the cell, continue
-                            pass
+        neighbors = Minesweeper.get_neighbors(row, col, self.board)
+        for cell in neighbors:
+            # if not revealed yet, reveal it and reveal its neighbors
+            if not cell.revealed:
+                cell.revealed = True
+                self.total_revealed += 1
+                if cell.neighbors == 0 and cell.is_mine == False:
+                    self.reveal_neighbors(cell.row, cell.col)
 
 
     """
@@ -359,10 +381,14 @@ class Minesweeper:
         """
         self._running = True
         while (self._running):
-            now = time.time()
-            self.time_elapsed = now - self.start_time
+            # increment the game clock if we're playing now
+            if (not self.lost_game) and (not self.won_game):
+                now = time.time()
+                self.time_elapsed = now - self.start_time
+            # listen for user input events
             for event in pygame.event.get():
                 self.on_event(event)
+            # draw the updated game board and score
             self.draw_board()
 
 
@@ -400,9 +426,12 @@ class Minesweeper:
                             for j in xrange(self.cols):
                                 cell_rect = self.board[i][j].rect
                                 if cell_rect.collidepoint(x,y):
-                                    self.reveal_cell(i, j)
-                                    if (self.test_did_win()):
-                                        self.game_over()
+                                    # if unrevealed, reveal the cell
+                                    if not self.board[i][j].revealed:
+                                        self.reveal_cell(i, j)
+                                        # test if we won or not
+                                        if (self.test_did_win()):
+                                            self.game_over()
             # right click
             elif event.button == 3:
                 print 'right click'
@@ -421,8 +450,7 @@ class Minesweeper:
                 cell_rect = self.board[i][j].rect
                 if cell_rect.collidepoint(x,y):
                     self.flag_cell(i, j)
-                    if (self.test_did_win()):
-                        self.game_over()
+                    self.draw_board()
 
 
 if __name__ == "__main__":
