@@ -7,12 +7,13 @@ from cell import Cell
 import os
 import controller
 import solver
+import pickle
 
 """
 Change the USE_AI constant to switch between AI and human gameplay modes.
 """
 USE_AI = True
-NUMBER_OF_GAMES = 5 # number of games AI should autoplay
+NUMBER_OF_GAMES = 4 # number of games AI should autoplay
 
 
 class Minesweeper:
@@ -53,8 +54,40 @@ class Minesweeper:
         # now play!
         if USE_AI:
             self.autoplay(NUMBER_OF_GAMES)
-        else:
-            self.loop()
+        self.loop()
+
+
+    def test_did_win(self):
+        """
+        Tests whether the game's board is in a winning position.
+        Also sets self.won_game for use in the solver.
+        Winning conditions:
+        All cells revealed or with flags
+        All mines have flags
+        No cells without mines have flags
+        :return: bool
+        """
+        did_win = True
+        for i in xrange(self.rows):
+            for j in xrange(self.cols):
+                cell = self.board[i][j]
+                # unrevealed and not flagged squares
+                if not cell.revealed and not cell.flagged:
+                    did_win = False
+                    break
+                # incorrect flags
+                if cell.flagged and not cell.is_mine:
+                    did_win = False
+                    break
+                # unflagged mines
+                if cell.is_mine and not cell.flagged:
+                    did_win = False
+                    break
+        if did_win:
+            print "You won!"
+            self.won_game = True
+
+        return did_win
 
 
     @staticmethod
@@ -126,41 +159,11 @@ class Minesweeper:
 
             # computer starts playing
             s = solver.Solver()
-            s.play_randomly(self)
+            # s.play_randomly(self)
+            s.play_best_guess(self)
 
             # a new board is automatically created when the game is reset
             self.reset_game()
-
-
-
-    def test_did_win(self):
-        """
-        Winning conditions:
-        All cells revealed or with flags
-        All mines have flags
-        No cells without mines have flags
-        :return: bool
-        """
-        did_win = True
-        for i in xrange(self.rows):
-            for j in xrange(self.cols):
-                cell = self.board[i][j]
-                # unrevealed and not flagged squares
-                if not cell.revealed and not cell.flagged:
-                    did_win = False
-                    break
-                # incorrect flags
-                if cell.flagged and not cell.is_mine:
-                    did_win = False
-                    break
-                # unflagged mines
-                if cell.is_mine and not cell.flagged:
-                    did_win = False
-                    break
-        if did_win:
-            self.won_game = True
-            print "You won! Final score:", self.score
-        return did_win
 
 
     def game_over(self):
@@ -314,7 +317,8 @@ class Minesweeper:
                 self.board[i][j].flagged = False
             else:
                 self.board[i][j].flagged = True
-        if (self.test_did_win()):
+        print "testing if won:", self.test_did_win()
+        if self.test_did_win():
             self.game_over()
 
 
@@ -430,7 +434,7 @@ class Minesweeper:
                                     if not self.board[i][j].revealed:
                                         self.reveal_cell(i, j)
                                         # test if we won or not
-                                        if (self.test_did_win()):
+                                        if self.test_did_win():
                                             self.game_over()
             # right click
             elif event.button == 3:
