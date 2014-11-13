@@ -19,7 +19,7 @@ class Minesweeper:
     """
     Main game application
     """
-    def __init__(self, filename=None, width=400, height=444, rows=6, cols=6, mines=3):
+    def __init__(self, filename=None, width=400, height=444, rows=8, cols=8, mines=3):
 
         # pygame setup
         self._running = True # used in game loop
