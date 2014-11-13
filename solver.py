@@ -10,7 +10,7 @@ def check_corners(game, unrevealed):
                 if curr_cell.neighbors == 1:
                     #check if it's on an edge or corner
                     if x - 1 < 0:
-                        left.append([curr_cell.row, curr_cell.col])
+                        print curr_cell.row, curr_cell.col, "on the left edge"
                     if x + 1 > game.rows:
                         print curr_cell.row, curr_cell.col, "on the right edge"
                     if y - 1 < 0:
