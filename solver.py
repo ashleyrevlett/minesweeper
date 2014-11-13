@@ -65,4 +65,4 @@ class Solver:
 
             # draw updated board and pause for a second
             game.draw_board()
-            time.sleep(10)
+            time.sleep(1)
