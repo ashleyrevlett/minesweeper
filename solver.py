@@ -3,6 +3,21 @@ import time
 # from logilab.constraint import *  # csp
 import minesweeper as ms
 
+def check_corners(game, unrevealed):
+
+        for x in xrange(game.rows):
+            for y in xrange(game.cols):
+                curr_cell = game.board[x][y]
+                if curr_cell.neighbors == 1:
+                    #check if it's on an edge or corner
+                    if x - 1 < 0:
+                        print curr_cell.row, curr_cell.col, "on the left edge"
+                    if x + 1 > game.rows:
+                        print curr_cell.row, curr_cell.col, "on the right edge"
+                    if y - 1 < 0:
+                        print curr_cell.row, curr_cell.col, "on the top edge"
+                    if y + 1 > game.cols:
+                        print curr_cell.row, curr_cell.col, "on the bottom edge"
 
 class Solver:
 
@@ -14,6 +29,7 @@ class Solver:
 
         # create a stack of unrevealed cells
         unrevealed = []
+
         for i in xrange(game.rows):
             for j in xrange(game.cols):
                 unrevealed.append(game.board[i][j])
@@ -36,7 +52,6 @@ class Solver:
             elif not cell.revealed:
                 game.reveal_cell(cell.row, cell.col)
                 print "Revealing", cell
-
             # update the stack to only contain non-revealed cells
             # TODO: make this more efficient by not modifying the list in place
             unrevealed = []
@@ -45,6 +60,9 @@ class Solver:
                     if not game.board[i][j].revealed and not game.board[i][j].flagged:
                         unrevealed.append(game.board[i][j])
             random.shuffle(unrevealed)
+
+            #check to see if there's any corners that can be flagged as bombs
+            check_corners(game, unrevealed)
 
             # draw updated board and pause for a second
             game.draw_board()
@@ -151,4 +169,3 @@ class Solver:
                 if len(flagged_n_neighbors) > 0:
                     safe = True
         return safe
-
