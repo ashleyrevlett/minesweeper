@@ -147,7 +147,7 @@ class Solver:
                         if (game.test_did_win()):
                             game.game_over()
                         game.draw_board()
-                        time.sleep(1)
+                        time.sleep(3)
 
 
     def is_cell_safe(self, cell, board):

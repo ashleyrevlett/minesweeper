@@ -12,15 +12,17 @@ import pickle
 """
 Change the USE_AI constant to switch between AI and human gameplay modes.
 """
-USE_AI = True
-NUMBER_OF_GAMES = 4 # number of games AI should autoplay
+USE_AI = False
+
+#uncomment to play a given number of times
+#NUMBER_OF_GAMES = 4 # number of games AI should autoplay
 
 
 class Minesweeper:
     """
     Main game application
     """
-    def __init__(self, filename=None, width=400, height=444, rows=8, cols=8, mines=3):
+    def __init__(self, filename=None, width=400, height=444, rows=10, cols=10, mines=10):
 
         # pygame setup
         self._running = True # used in game loop
@@ -40,6 +42,8 @@ class Minesweeper:
 
         #scoreboard assets
         self.button_icon = None
+        self.auto_button = None
+
         # store the absolute filepath of the script; needed later to access assets by absolute path
         self.filepath = os.path.split(os.path.realpath(__file__))[0]
 
@@ -52,8 +56,9 @@ class Minesweeper:
         self.board = self.create_game_board(rows=self.rows, cols=self.cols, mines=self.mines, cell_margin=self.cell_margin)
 
         # now play!
+        # change argument here if you want to play multiple times
         if USE_AI:
-            self.autoplay(NUMBER_OF_GAMES)
+            self.autoplay()
         self.loop()
 
 
@@ -143,27 +148,27 @@ class Minesweeper:
                     print '\t', n
                 print ""
 
-
-    def autoplay(self, times_to_play):
+    #def autoplay(self, times_to_play)
+    def autoplay(self):
         """
         Automatically play minesweeper a certain number of times.
         Currently only has random method, but could allow for selection of other methods.
         :param times_to_play: int
         :return:
         """
-        for i in range(times_to_play):
-            print "\n### Playthrough", i
+        #for i in range(times_to_play):
+            #print "\n### Playthrough", i
 
             # draw the starting board; also draws scores
-            self.draw_board()
+        self.draw_board()
 
-            # computer starts playing
-            s = solver.Solver()
-            # s.play_randomly(self)
-            s.play_best_guess(self)
+        # computer starts playing
+        s = solver.Solver()
+        # s.play_randomly(self)
+        s.play_best_guess(self)
 
-            # a new board is automatically created when the game is reset
-            self.reset_game()
+        # a new board is automatically created when the game is reset
+        self.reset_game()
 
 
     def game_over(self):
@@ -195,7 +200,7 @@ class Minesweeper:
 
         # calculate positions of cells
         cell_size_w = int((self.width - (self.cols * cell_margin)) / self.cols)
-        cell_size_h = int((self.height - self.header_height - (self.rows * cell_margin)) / self.rows)
+        cell_size_h = int(((self.height-100) - self.header_height - (self.rows * cell_margin)) / self.rows)
         self.cell_size = min(cell_size_h, cell_size_w)
 
         # populate board with cells
@@ -208,6 +213,8 @@ class Minesweeper:
                 rect = Rect(xpos, ypos, self.cell_size, self.cell_size)
                 cell.rect = rect
                 board[i][j] = cell
+
+        # create button for turning AI on/off
 
         # add mines to random cells
         # have to track which mines have been added so we don't duplicate them
@@ -272,12 +279,27 @@ class Minesweeper:
         score_text = "{:0>3d}".format(self.score) # pad score w/ 0s
         score_label = label_font.render(score_text, 1, font_color)
         self.screen.blit(score_label, (text_inset, text_inset))
+
         # timer
         time_text = "{:0>3d}".format(int(self.time_elapsed)) # pad score w/ 0s
         time_label = label_font.render(time_text, 1, font_color)
         self.screen.blit(time_label, (self.width - (text_inset+50), text_inset))
 
         # buttons
+        self.auto_button = Rect(90, 350, 125, 50)
+        pygame.draw.rect(self.screen, blue, self.auto_button)
+
+        auto_font = pygame.font.SysFont("Arial Black", 20)
+        auto_label = auto_font.render("Autoplay", 1, (0, 0, 0))
+
+        self.screen.blit(auto_label, (100, 355))
+
+
+        # need to get absolute pathname for font file
+        path = os.path.join(self.filepath, "assets/fonts/DS-DIGIB.ttf")
+        label_font = pygame.font.Font(path, font_size)
+        #
+
         # draw the playing, winning or losing icon
         if self.lost_game:
             icon = pygame.sprite.Sprite() # create sprite
@@ -425,6 +447,10 @@ class Minesweeper:
                     print "You clicked", x, y
                     if self.button_icon.rect.collidepoint(x,y):
                         self.reset_game()
+                    if self.auto_button.collidepoint(x,y):
+                        self.autoplay()
+                        self.reset_game()
+
                     else:
                         for i in xrange(self.rows):
                             for j in xrange(self.cols):
