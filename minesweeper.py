@@ -8,6 +8,7 @@ import os
 import controller
 import solver
 import pickle
+import stats
 
 """
 Change the USE_AI constant to switch between AI and human gameplay modes.
@@ -15,14 +16,13 @@ Change the USE_AI constant to switch between AI and human gameplay modes.
 USE_AI = False
 
 #uncomment to play a given number of times
-#NUMBER_OF_GAMES = 4 # number of games AI should autoplay
-
+NUMBER_OF_GAMES = 20 # number of games AI should autoplay
 
 class Minesweeper:
     """
     Main game application
     """
-    def __init__(self, filename=None, width=400, height=444, rows=10, cols=10, mines=10):
+    def __init__(self, filename=None, width=400, height=444, rows=6, cols=6, mines=5):
 
         # pygame setup
         self._running = True # used in game loop
@@ -148,27 +148,29 @@ class Minesweeper:
                     print '\t', n
                 print ""
 
-    #def autoplay(self, times_to_play)
-    def autoplay(self):
+    def autoplay(self, times_to_play):
         """
         Automatically play minesweeper a certain number of times.
         Currently only has random method, but could allow for selection of other methods.
         :param times_to_play: int
         :return:
         """
-        #for i in range(times_to_play):
-            #print "\n### Playthrough", i
+        for i in range(times_to_play):
+            print "\n### Playthrough", i
 
             # draw the starting board; also draws scores
-        self.draw_board()
+            self.draw_board()
 
-        # computer starts playing
-        s = solver.Solver()
-        # s.play_randomly(self)
-        s.play_best_guess(self)
+            # computer starts playing
+            s = solver.Solver()
+            # s.play_randomly(self)
+            s.play_best_guess(self)
 
-        # a new board is automatically created when the game is reset
-        self.reset_game()
+            play_info = stats.Stat(i, self.score, self.won_game)
+            stats.add_stat(play_info)
+
+            # a new board is automatically created when the game is reset
+            self.reset_game()
 
 
     def game_over(self):
@@ -200,7 +202,7 @@ class Minesweeper:
 
         # calculate positions of cells
         cell_size_w = int((self.width - (self.cols * cell_margin)) / self.cols)
-        cell_size_h = int(((self.height-100) - self.header_height - (self.rows * cell_margin)) / self.rows)
+        cell_size_h = int(((self.height) - self.header_height - (self.rows * cell_margin)) / self.rows)
         self.cell_size = min(cell_size_h, cell_size_w)
 
         # populate board with cells
@@ -286,13 +288,13 @@ class Minesweeper:
         self.screen.blit(time_label, (self.width - (text_inset+50), text_inset))
 
         # buttons
-        self.auto_button = Rect(90, 350, 125, 50)
+        self.auto_button = Rect(70, 5, 100, 35)
         pygame.draw.rect(self.screen, blue, self.auto_button)
 
         auto_font = pygame.font.SysFont("Arial Black", 20)
         auto_label = auto_font.render("Autoplay", 1, (0, 0, 0))
 
-        self.screen.blit(auto_label, (100, 355))
+        self.screen.blit(auto_label, (70,5))
 
 
         # need to get absolute pathname for font file
@@ -448,7 +450,8 @@ class Minesweeper:
                     if self.button_icon.rect.collidepoint(x,y):
                         self.reset_game()
                     if self.auto_button.collidepoint(x,y):
-                        self.autoplay()
+                        self.autoplay(NUMBER_OF_GAMES)
+                        stats.plot_stats(NUMBER_OF_GAMES, self.rows, self.cols, self.mines)
                         self.reset_game()
 
                     else:

@@ -3,21 +3,7 @@ import time
 # from logilab.constraint import *  # csp
 import minesweeper as ms
 
-def check_corners(game, unrevealed):
-
-        for x in xrange(game.rows):
-            for y in xrange(game.cols):
-                curr_cell = game.board[x][y]
-                if curr_cell.neighbors == 1:
-                    #check if it's on an edge or corner
-                    if x - 1 < 0:
-                        print curr_cell.row, curr_cell.col, "on the left edge"
-                    if x + 1 > game.rows:
-                        print curr_cell.row, curr_cell.col, "on the right edge"
-                    if y - 1 < 0:
-                        print curr_cell.row, curr_cell.col, "on the top edge"
-                    if y + 1 > game.cols:
-                        print curr_cell.row, curr_cell.col, "on the bottom edge"
+PAUSE = True
 
 class Solver:
 
@@ -66,7 +52,8 @@ class Solver:
 
             # draw updated board and pause for a second
             game.draw_board()
-            time.sleep(1)
+            if PAUSE == True:
+                time.sleep(1)
 
 
 
@@ -90,7 +77,8 @@ class Solver:
 
         # draw updated board and pause for a second
         game.draw_board()
-        time.sleep(1)
+        if PAUSE == True:
+            time.sleep(1)
 
 
         total_flagged = 0
@@ -121,7 +109,8 @@ class Solver:
                                 if (game.test_did_win()):
                                     game.game_over()
                                 game.draw_board()
-                                time.sleep(1)
+                                if PAUSE == True:
+                                    time.sleep(1)
                                 made_move = True
 
             # we may have won with the flag above so test whether we're still playing
@@ -134,7 +123,8 @@ class Solver:
                         if (game.test_did_win()):
                             game.game_over()
                         game.draw_board()
-                        time.sleep(1)
+                        if PAUSE == True:
+                            time.sleep(1)
                         made_move = True
 
                 # assume we've made our best guesses and now have to guess randomly
@@ -147,7 +137,8 @@ class Solver:
                         if (game.test_did_win()):
                             game.game_over()
                         game.draw_board()
-                        time.sleep(3)
+                        if PAUSE == True:
+                            time.sleep(3)
 
 
     def is_cell_safe(self, cell, board):
