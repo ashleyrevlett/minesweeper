@@ -8,9 +8,6 @@ from pygame.locals import *  # for keypress constants
 import random
 
 class Board:
-    """
-    Cell class is used to track the cells' state, drawing info, and number of neighbors
-    """
     def __init__(self, width, height, rows, cols, mines, screen, header_height):   
 
         """

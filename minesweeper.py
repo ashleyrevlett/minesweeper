@@ -1,3 +1,4 @@
+import sys
 import pygame
 from pygame.locals import *  # for keypress constants
 import random
@@ -6,23 +7,15 @@ import time
 from cell import Cell
 import os
 import solver
-import pickle
 import stats
 from board import Board
 
-"""
-Change the USE_AI constant to switch between AI and human gameplay modes.
-"""
-USE_AI = False
-
-#uncomment to play a given number of times
-NUMBER_OF_GAMES = 20 # number of games AI should autoplay
 
 class Minesweeper:
     """
     Main game application
     """
-    def __init__(self, filename=None, width=400, height=444, rows=6, cols=6, mines=5):
+    def __init__(self, width, height, rows, cols, mines, use_ai, total_games):
 
         # pygame setup
         self._running = True # used in game loop
@@ -36,6 +29,9 @@ class Minesweeper:
         self.header_height = 44
         self.lost_game = False
         self.won_game = False
+        self.use_ai = use_ai
+        self.rows = rows
+        self.cols = cols
 
         # used by solvers
         self.total_revealed = 0 # track total number of cells that have been revealed
@@ -47,17 +43,14 @@ class Minesweeper:
         # store the absolute filepath of the script; needed later to access assets by absolute path
         self.filepath = os.path.split(os.path.realpath(__file__))[0]
 
-        # gameboard setup
-        self.rows = rows
-        self.cols = cols
-        self.cell_margin = 1
+        # gameboard setup        
         self.mines = mines
         self.board = Board(width, height, rows, cols, mines, self.screen, self.header_height)
 
         # now play!
         # change argument here if you want to play multiple times
-        if USE_AI:
-            self.autoplay()
+        if self.use_ai:
+            self.autoplay(total_games)
         self.loop()
 
 
@@ -372,5 +365,32 @@ class Minesweeper:
 
 
 if __name__ == "__main__":
-    # run graph application
-    app = Minesweeper()
+
+    # default settings
+    width = 400
+    height = 444
+    rows = 8
+    cols = 8
+    mines = 5
+    use_ai = False
+    total_games = 5
+
+    # command line args override defaults
+    if len(sys.argv) > 1:
+        width = int(sys.argv[1])
+    if len(sys.argv) > 2:
+        height = int(sys.argv[2])
+    if len(sys.argv) > 3:
+        rows = int(sys.argv[3])
+    if len(sys.argv) > 4:
+        cols = int(sys.argv[4])
+    if len(sys.argv) > 5:
+        mines = int(sys.argv[5])
+    if len(sys.argv) > 6:
+        if (sys.argv[6] == 'T' or sys.argv[6] == 't'):
+            use_ai = True
+    if len(sys.argv) > 7:
+        total_games = int(sys.argv[7])
+    
+    app = Minesweeper(width, height, rows, cols, mines, use_ai, total_games)
+
