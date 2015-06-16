@@ -18,7 +18,7 @@ class Solver:
 
         for i in xrange(game.rows):
             for j in xrange(game.cols):
-                unrevealed.append(game.board[i][j])
+                unrevealed.append(game.board.cells[i][j])
         # we will pop the cells from the stack, so randomize their order first
         random.shuffle(unrevealed)
 
@@ -43,15 +43,15 @@ class Solver:
             unrevealed = []
             for i in xrange(game.rows):
                 for j in xrange(game.cols):
-                    if not game.board[i][j].revealed and not game.board[i][j].flagged:
-                        unrevealed.append(game.board[i][j])
+                    if not game.board.cells[i][j].revealed and not game.board.cells[i][j].flagged:
+                        unrevealed.append(game.board.cells[i][j])
             random.shuffle(unrevealed)
 
             #check to see if there's any corners that can be flagged as bombs
             check_corners(game, unrevealed)
 
             # draw updated board and pause for a second
-            game.draw_board()
+            game.draw()
             if PAUSE == True:
                 time.sleep(1)
 
@@ -68,7 +68,7 @@ class Solver:
 
 
         # create a list of cells
-        cells = [game.board[i][j]
+        cells = [game.board.cells[i][j]
                  for i in xrange(game.rows)
                  for j in xrange(game.cols)]
 
@@ -76,7 +76,7 @@ class Solver:
         game.reveal_cell(first_cell.row, first_cell.col)
 
         # draw updated board and pause for a second
-        game.draw_board()
+        game.draw()
         if PAUSE == True:
             time.sleep(1)
 
@@ -96,7 +96,7 @@ class Solver:
                 cell = revealed_numbered_cells.pop()
                 # cell may have been marked flagged after revealed_numbered_cells was compiled
                 if not cell.flagged:
-                    neighbor_cells = ms.Minesweeper.get_neighbors(cell.row, cell.col, game.board)
+                    neighbor_cells = game.board.get_neighbor_cells(cell.row, cell.col)
                     flagged_neighbors = [n for n in neighbor_cells if n.flagged]
                     number_remaining_mines = cell.neighbors - len(flagged_neighbors)
                     unknown_neighbors = [n for n in neighbor_cells if not n.flagged and not n.revealed]
@@ -108,7 +108,7 @@ class Solver:
                                 game.flag_cell(c.row, c.col)
                                 if (game.test_did_win()):
                                     game.game_over()
-                                game.draw_board()
+                                game.draw()
                                 if PAUSE == True:
                                     time.sleep(1)
                                 made_move = True
@@ -122,7 +122,7 @@ class Solver:
                         game.reveal_cell(c.row, c.col)
                         if (game.test_did_win()):
                             game.game_over()
-                        game.draw_board()
+                        game.draw()
                         if PAUSE == True:
                             time.sleep(1)
                         made_move = True
@@ -136,7 +136,7 @@ class Solver:
                         game.reveal_cell(cell.row, cell.col)
                         if (game.test_did_win()):
                             game.game_over()
-                        game.draw_board()
+                        game.draw()
                         if PAUSE == True:
                             time.sleep(3)
 
@@ -151,11 +151,11 @@ class Solver:
         # TODO: this really needs to only check neighbors' neighbors that border the original cell.
         # right now more cells are considered than should be.
         safe = False
-        neighbors = ms.Minesweeper.get_neighbors(cell.row, cell.col, board)
+        neighbors = board.get_neighbor_cells(cell.row, cell.col)
         revealed_neighbors = [n for n in neighbors if n.revealed or n.flagged]
         for n in revealed_neighbors:
             if n.neighbors > 0:
-                n_neighbors = ms.Minesweeper.get_neighbors(n.row, n.col, board)
+                n_neighbors = board.get_neighbor_cells(n.row, n.col)
                 flagged_n_neighbors = [n for n in n_neighbors if n.flagged]
                 if len(flagged_n_neighbors) > 0:
                     safe = True

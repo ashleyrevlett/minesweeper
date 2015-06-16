@@ -50,6 +50,7 @@ class Cell:
         else:
             self.draw_unrevealed_cell()
 
+
     def draw_detonated_mine(self):
         pygame.draw.rect(self.screen, (255,0,0), self.rect, 0)
         icon = pygame.sprite.Sprite() # create sprite
