@@ -1,24 +1,21 @@
 import sys
+import time
 import pygame
 from pygame.locals import *  # for keypress constants
-import random
-from colors import *  # for color constants
-import time
 from cell import Cell
-import os
-import solver
-import stats
 from board import Board
 from gui import Gui
+import solver
 
-class Minesweeper:
+
+class Minesweeper(object):
     """
     Main game application
     """
     def __init__(self, width, height, rows, cols, mines, use_ai, total_games):
 
         # pygame setup
-        self._running = True # used in game loop
+        self._running = True # used to stop game loop
         self.size = self.width, self.height = width, height
         self.screen = self.setup_screen()
 
@@ -29,18 +26,19 @@ class Minesweeper:
         self.lost_game = False
         self.won_game = False
 
-        # game setup
-        self.use_ai = use_ai
+        # game board setup        
         self.rows = rows
         self.cols = cols
-        self.mines = mines        
+        self.mines = mines
 
-        # create board and gui objects
+        # AI / autoplay
+        self.use_ai = use_ai        
+
+        # create board and gui 
         self.board = Board(width, height, rows, cols, mines, self.screen, 44)    
         self.gui = Gui(self.board, self)
 
-        # now play!
-        # change argument here if you want to play multiple times
+        # autoplay or enter event loop        
         if self.use_ai:
             self.autoplay(total_games)
         self.loop()
@@ -49,10 +47,8 @@ class Minesweeper:
 
     def autoplay(self, times_to_play):
         """
-        Automatically play minesweeper a certain number of times.
-        Currently only has random method, but could allow for selection of other methods.
+        Automatically play minesweeper a certain number of times.        
         :param times_to_play: int
-        :return:
         """
         for i in range(times_to_play):
             print "\n### Playthrough", i
@@ -60,15 +56,11 @@ class Minesweeper:
             # draw the starting board; also draws scores
             self.draw()
 
-            # computer starts playing
-            s = solver.Solver()
-            # s.play_randomly(self)
-            s.play_best_guess(self)
+            # play 1 game
 
-            play_info = stats.Stat(i, self.score, self.won_game)
-            stats.add_stat(play_info)
-
-            # a new board is automatically created when the game is reset
+            solver.Solver.play_best_guess(self)            
+            
+            # reset board
             self.reset_game()
 
 
@@ -157,7 +149,6 @@ class Minesweeper:
         """
         pygame.init()
         screen = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
-        screen.fill(bg_gray_dark)
         pygame.display.flip()
         return screen
 
@@ -200,19 +191,15 @@ class Minesweeper:
                 # macs don't have right click, so process control-click as right click
                 key = pygame.key.get_pressed()
                 if key[K_LCTRL]:
-                    print "Control and left click pressed"
                     self.flag_event(event)
                 else:
                     # left click reveals a cell
                     x,y = event.pos
-                    print "You clicked", x, y
                     if self.gui.button_icon.rect.collidepoint(x,y):
                         self.reset_game()
                     if self.gui.auto_button.collidepoint(x,y):
                         self.autoplay(total_games)
-                        stats.plot_stats(total_games, self.rows, self.cols, self.mines)
                         self.reset_game()
-
                     else:
                         for i in xrange(self.rows):
                             for j in xrange(self.cols):
@@ -226,7 +213,6 @@ class Minesweeper:
                                             self.game_over()
             # right click
             elif event.button == 3:
-                print 'right click'
                 self.flag_event(event)
 
 

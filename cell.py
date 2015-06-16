@@ -20,7 +20,7 @@ class Cell:
         self.mine_icon = None
         self.screen = screen
         (self.filepath, filename) = os.path.split(os.path.realpath(__file__))
-
+        self.inset = 3
 
     def reset(self):
         self.revealed = False
@@ -61,12 +61,11 @@ class Cell:
     def draw_detonated_mine(self):
         pygame.draw.rect(self.screen, (255,0,0), self.rect, 0)
         icon = pygame.sprite.Sprite() # create sprite
-        icon_path = os.path.join(self.filepath, "assets/images/mine_red_32.png")
+        icon_path = os.path.join(self.filepath, "assets/images/mine_red_20.png")
         icon.image = pygame.image.load(icon_path).convert() # load flagimage
-        # place icon in center of cell
-        inset = 8
+        # place icon in center of cell        
         icon.rect = icon.image.get_rect() # use image extent values
-        icon.rect.topleft = [self.rect.x + inset, self.rect.y + inset] # put the sprite in the top left corner
+        icon.rect.topleft = [self.rect.x + self.inset, self.rect.y + self.inset] # put the sprite in the top left corner
         self.screen.blit(icon.image, icon.rect)
 
 
@@ -76,12 +75,11 @@ class Cell:
         # cache flag sprite on first creation
         if self.flag_icon == None:
             self.flag_icon = pygame.sprite.Sprite() # create sprite
-            icon_path = os.path.join(self.filepath, "assets/images/flag_32.png")
+            icon_path = os.path.join(self.filepath, "assets/images/flag_20.png")
             self.flag_icon.image = pygame.image.load(icon_path).convert() # load flagimage
         # place flag in center of cell
-        flag_inset = 8
         self.flag_icon.rect = self.flag_icon.image.get_rect() # use image extent values
-        self.flag_icon.rect.topleft = [self.rect.x + flag_inset, self.rect.y + flag_inset] # put the ball in the top left corner
+        self.flag_icon.rect.topleft = [self.rect.x + self.inset, self.rect.y + self.inset] # put the ball in the top left corner
         self.screen.blit(self.flag_icon.image, self.flag_icon.rect)
 
 
@@ -110,18 +108,46 @@ class Cell:
     def draw_mine(self):
         if self.mine_icon == None:
             self.mine_icon = pygame.sprite.Sprite() # create sprite
-            icon_path = os.path.join(self.filepath, "assets/images/mine_32.png")
+            icon_path = os.path.join(self.filepath, "assets/images/mine_20.png")
             self.mine_icon.image = pygame.image.load(icon_path).convert() # load flagimage
         # place icon in center of cell
-        inset = 8
         self.mine_icon.rect = self.mine_icon.image.get_rect() # use image extent values
-        self.mine_icon.rect.topleft = [self.rect.x + inset, self.rect.y + inset] # put the sprite in the top left corner
+        self.mine_icon.rect.topleft = [self.rect.x + self.inset, self.rect.y + self.inset] # put the sprite in the top left corner
         self.screen.blit(self.mine_icon.image, self.mine_icon.rect)
 
 
+    def draw_mine_error(self):
+        icon = pygame.sprite.Sprite() # create sprite
+        icon_path = os.path.join(self.filepath, "assets/images/mine_x_20.png")
+        icon.image = pygame.image.load(icon_path).convert() # load flagimage
+        # place icon in center of cell
+        icon.rect = icon.image.get_rect() # use image extent values
+        icon.rect.topleft = [self.rect.x + self.inset, self.rect.y + self.inset] # put the sprite in the top left corner
+        self.screen.blit(icon.image, icon.rect)
+
+
     def draw_revealed_cell(self):
-        # all revealed cells get a solid bg rect
+        # all revealed cells get a solid bg rect and dark borders
         pygame.draw.rect(self.screen, (170,170,170), self.rect, 0)
+
+        line_width = 1
+        # horizontal bottom shadow
+        pygame.draw.line(self.screen, bg_gray_dark,
+                         (self.rect.x, self.rect.y + self.rect.height - line_width/2),
+                         (self.rect.x + self.rect.width, self.rect.y + self.rect.height - line_width/2), line_width)
+        # vertical right shadow
+        pygame.draw.line(self.screen, bg_gray_dark,
+                         (self.rect.x + self.rect.width - line_width/2, self.rect.y),
+                         (self.rect.x + self.rect.width - line_width/2, self.rect.y + self.rect.height), line_width)
+        # horizontal top highlight
+        pygame.draw.line(self.screen, bg_gray_dark,
+                         (self.rect.x, self.rect.y + line_width/2 - 1),
+                         (self.rect.x + self.rect.width - line_width, self.rect.y + line_width/2 - 1), line_width)
+        # vertical left highlight
+        pygame.draw.line(self.screen, bg_gray_dark,
+                         (self.rect.x + line_width/2 - 1, self.rect.y),
+                         (self.rect.x + line_width/2 - 1, self.rect.y + self.rect.height - line_width), line_width)
+
         # if the cell isn't flagged, is revealed and has neighbors, show the neighbor count
         if (self.is_mine == False) and (self.revealed == True) and (self.neighbors > 0) and not self.flagged:
             # font color is based on neighbor count
@@ -134,23 +160,12 @@ class Cell:
                 font_color = red
             if self.neighbors == 4:
                 font_color = purple
-            font_size = 22
+            font_size = 24
             text_inset = 5
             label_text = "%d" % (self.neighbors)
-            label_font = pygame.font.SysFont('Arial', font_size)
+            label_font = pygame.font.SysFont('Arial Bold', font_size)
             label = label_font.render(label_text, 1, font_color)
             self.screen.blit(label, (self.rect.x + text_inset, self.rect.y + text_inset))
-
-    def draw_mine_error(self):
-        icon = pygame.sprite.Sprite() # create sprite
-        icon_path = os.path.join(self.filepath, "assets/images/mine_x_32.png")
-        icon.image = pygame.image.load(icon_path).convert() # load flagimage
-        # place icon in center of cell
-        inset = 8
-        icon.rect = icon.image.get_rect() # use image extent values
-        icon.rect.topleft = [self.rect.x + inset, self.rect.y + inset] # put the sprite in the top left corner
-        self.screen.blit(icon.image, icon.rect)
-
 
 
     def __str__(self):

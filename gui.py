@@ -1,16 +1,14 @@
 import sys
+import os
+import random
+import time
 import pygame
 from pygame.locals import *  # for keypress constants
-import random
 from colors import *  # for color constants
-import time
 from cell import Cell
-import os
-import solver
 from board import Board
 
-
-class Gui:
+class Gui(object):
 
     def __init__(self, board, game):
         self.header_height = 44

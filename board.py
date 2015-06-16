@@ -1,13 +1,10 @@
-# board.py
-
-import pygame
-from colors import *  # for color constants
 import os
-from cell import Cell
-from pygame.locals import *  # for keypress constants
 import random
+import pygame
+from pygame.locals import *  # for keypress constants
+from cell import Cell
 
-class Board:
+class Board(object):
     def __init__(self, width, height, rows, cols, mines, screen, header_height):   
         """
         Create game board and populate with mines.        
@@ -29,17 +26,10 @@ class Board:
 
         # board object
         self.cells = [[None for i in xrange(self.cols)] for i in xrange(self.rows)]
-        self.create_cells()
 
-        # add mines to board
+        # add unrevealed cells and hidden mines to board
         self.reset()
 
-
-    def create_cells(self):
-        """
-        Return 2d array of cell objects, all unrevealed and mine-free
-        """
-        
 
     def reset(self):
         """
@@ -77,7 +67,6 @@ class Board:
                 neighbors = self.get_neighbor_cells(i, j)
                 for n in neighbors:
                     if n.is_mine: cell.neighbors += 1
-
 
 
     def draw(self):
