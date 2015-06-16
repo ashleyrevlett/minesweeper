@@ -22,6 +22,13 @@ class Cell:
         (self.filepath, filename) = os.path.split(os.path.realpath(__file__))
 
 
+    def reset(self):
+        self.revealed = False
+        self.is_mine = False
+        self.detonated = False
+        self.flagged = False
+
+
     def draw(self):
         """
         Draw the cell. Appearance depends on stage and # neighbors

@@ -9,7 +9,7 @@ import os
 import solver
 import stats
 from board import Board
-
+from gui import Gui
 
 class Minesweeper:
     """
@@ -23,29 +23,21 @@ class Minesweeper:
         self.screen = self.setup_screen()
 
         # scorekeeping
-        self.score = 0
         self.start_time = time.time()
-        self.time_elapsed = 0
-        self.header_height = 44
+        self.time_elapsed = 0        
+        self.score = 0
         self.lost_game = False
         self.won_game = False
+
+        # game setup
         self.use_ai = use_ai
         self.rows = rows
         self.cols = cols
+        self.mines = mines        
 
-        # used by solvers
-        self.total_revealed = 0 # track total number of cells that have been revealed
-
-        #scoreboard assets
-        self.button_icon = None
-        self.auto_button = None
-
-        # store the absolute filepath of the script; needed later to access assets by absolute path
-        self.filepath = os.path.split(os.path.realpath(__file__))[0]
-
-        # gameboard setup        
-        self.mines = mines
-        self.board = Board(width, height, rows, cols, mines, self.screen, self.header_height)
+        # create board and gui objects
+        self.board = Board(width, height, rows, cols, mines, self.screen, 44)    
+        self.gui = Gui(self.board, self)
 
         # now play!
         # change argument here if you want to play multiple times
@@ -92,80 +84,10 @@ class Minesweeper:
         self.lost_game = False
         self.won_game = False
         self.score = 0
-        self.total_revealed = 0 # used by the solver
         self.start_time = time.time()
         self.time_elapsed = 0
-        self.board = Board(self.width, self.height, self.rows, self.cols, self.mines, self.screen, self.header_height)
+        self.board.reset()
         self.draw()
-
-
-    def draw_score(self):
-        """
-        called by draw_board, don't call directly
-        """
-        # draw bg rect
-        score_rect = Rect(0, 0, self.width, self.header_height)
-        pygame.draw.rect(self.screen, bg_gray, score_rect, 0)
-
-        # draw labels
-        font_color = red
-        font_size = 34
-        text_inset = 5
-
-        # need to get absolute pathname for font file
-        path = os.path.join(self.filepath, "assets/fonts/DS-DIGIB.ttf")
-        label_font = pygame.font.Font(path, font_size)
-
-        # score
-        score_text = "{:0>3d}".format(self.score) # pad score w/ 0s
-        score_label = label_font.render(score_text, 1, font_color)
-        self.screen.blit(score_label, (text_inset, text_inset))
-
-        # timer
-        time_text = "{:0>3d}".format(int(self.time_elapsed)) # pad score w/ 0s
-        time_label = label_font.render(time_text, 1, font_color)
-        self.screen.blit(time_label, (self.width - (text_inset+50), text_inset))
-
-        # buttons
-        self.auto_button = Rect(70, 5, 100, 35)
-        pygame.draw.rect(self.screen, blue, self.auto_button)
-
-        auto_font = pygame.font.SysFont("Arial Black", 20)
-        auto_label = auto_font.render("Autoplay", 1, (0, 0, 0))
-
-        self.screen.blit(auto_label, (70,5))
-
-
-        # need to get absolute pathname for font file
-        path = os.path.join(self.filepath, "assets/fonts/DS-DIGIB.ttf")
-        label_font = pygame.font.Font(path, font_size)
-        #
-
-        # draw the playing, winning or losing icon
-        if self.lost_game:
-            icon = pygame.sprite.Sprite() # create sprite
-            icon_path = os.path.join(self.filepath, "assets/images/button_frown.png")
-            icon.image = pygame.image.load(icon_path).convert() # load flagimage
-            icon.rect = icon.image.get_rect() # use image extent values
-            icon.rect.topleft = [self.width/2 - self.button_icon.rect.width/2, self.header_height/2 - icon.rect.height/2]
-            self.screen.blit(icon.image, icon.rect)
-        elif self.won_game:
-            icon = pygame.sprite.Sprite() # create sprite
-            icon_path = os.path.join(self.filepath, "assets/images/button_glasses.png")
-            icon.image = pygame.image.load(icon_path).convert() # load flagimage
-            icon.rect = icon.image.get_rect() # use image extent values
-            icon.rect.topleft = [self.width/2 - self.button_icon.rect.width/2, self.header_height/2 - icon.rect.height/2]
-            self.screen.blit(icon.image, icon.rect)
-        else:
-            if self.button_icon == None:
-                self.button_icon = pygame.sprite.Sprite() # create sprite
-                icon_path = os.path.join(self.filepath, "assets/images/button_smile.png")
-                self.button_icon.image = pygame.image.load(icon_path).convert() # load flagimage
-            # place icon in center of header
-            self.button_icon.rect = self.button_icon.image.get_rect() # use image extent values
-            self.button_icon.rect.topleft = [self.width/2 - self.button_icon.rect.width/2,
-                                             self.header_height/2 - self.button_icon.rect.height/2]
-            self.screen.blit(self.button_icon.image, self.button_icon.rect)
 
 
     def flag_cell(self, i, j):
@@ -193,7 +115,6 @@ class Minesweeper:
         :param col: int, col index for cell to reveal in board
         """
         cell = self.board.cells[row][col]
-        self.total_revealed += 1
         if cell.is_mine == True:
             print "You lose! Final Score: ", self.score
             cell.revealed = True
@@ -222,7 +143,6 @@ class Minesweeper:
             # if not revealed yet, reveal it and reveal its neighbors
             if not cell.revealed:
                 cell.revealed = True
-                self.total_revealed += 1
                 if cell.neighbors == 0 and cell.is_mine == False:
                     self.reveal_neighbors(cell.row, cell.col)
 
@@ -286,11 +206,11 @@ class Minesweeper:
                     # left click reveals a cell
                     x,y = event.pos
                     print "You clicked", x, y
-                    if self.button_icon.rect.collidepoint(x,y):
+                    if self.gui.button_icon.rect.collidepoint(x,y):
                         self.reset_game()
-                    if self.auto_button.collidepoint(x,y):
-                        self.autoplay(NUMBER_OF_GAMES)
-                        stats.plot_stats(NUMBER_OF_GAMES, self.rows, self.cols, self.mines)
+                    if self.gui.auto_button.collidepoint(x,y):
+                        self.autoplay(total_games)
+                        stats.plot_stats(total_games, self.rows, self.cols, self.mines)
                         self.reset_game()
 
                     else:
@@ -327,7 +247,7 @@ class Minesweeper:
 
     def draw(self):
         self.board.draw()
-        self.draw_score() # update scoreboard
+        self.gui.draw() # update scoreboard
         pygame.display.flip() # update screen
 
 
@@ -362,6 +282,7 @@ class Minesweeper:
             self.won_game = True
 
         return did_win
+
 
 
 if __name__ == "__main__":

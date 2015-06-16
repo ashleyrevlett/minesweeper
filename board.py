@@ -9,10 +9,8 @@ import random
 
 class Board:
     def __init__(self, width, height, rows, cols, mines, screen, header_height):   
-
         """
-        Create the initial game board and populate with mines.
-        :return: board - list of lists of Cell objects
+        Create game board and populate with mines.        
         """
         self.header_height = header_height
         self.screen = screen      
@@ -22,43 +20,59 @@ class Board:
         self.cols = cols
         self.mines = mines
         self.mine_locations = []
-        cell_margin = 0
+        self.cell_margin = 0
 
-        # board object
-        self.cells = [[None for i in xrange(cols)] for i in xrange(rows)]
-
-        # calculate positions of cells
-        cell_size_w = int((self.width - (cols * cell_margin)) / self.cols)
-        cell_size_h = int(((self.height) - header_height - (rows * cell_margin)) / self.rows)
+        # calculate size of cells
+        cell_size_w = int((self.width - (self.cols * self.cell_margin)) / self.cols)
+        cell_size_h = int(((self.height) - header_height - (rows * self.cell_margin)) / self.rows)
         self.cell_size = min(cell_size_h, cell_size_w)
 
-        # populate board with cells
+        # board object
+        self.cells = [[None for i in xrange(self.cols)] for i in xrange(self.rows)]
+        self.create_cells()
+
+        # add mines to board
+        self.reset()
+
+
+    def create_cells(self):
+        """
+        Return 2d array of cell objects, all unrevealed and mine-free
+        """
+        
+
+    def reset(self):
+        """
+        Reset tiles and spawn mines at new locations
+        """
+
+        # set cells up on board
         for i in xrange(self.rows):
             for j in xrange(self.cols):
                 cell = Cell(i, j, self.screen)
                 # cell.revealed = True
-                ypos = (self.cell_size * i) + (cell_margin * i) + header_height
-                xpos = (self.cell_size * j) + (cell_margin * j)
+                ypos = (self.cell_size * i) + (self.cell_margin * i) + self.header_height
+                xpos = (self.cell_size * j) + (self.cell_margin * j)
                 rect = Rect(xpos, ypos, self.cell_size, self.cell_size)
                 cell.rect = rect
                 self.cells[i][j] = cell
 
-        # add mines to random cells
-        # have to track which mines have been added so we don't duplicate them        
-        for m in xrange(mines):
-            # try to randomly set a random mine
-            rand_row = random.randint(0, rows-1)
-            rand_col = random.randint(0, cols-1)
+        # remove previous mine locations
+        del self.mine_locations[:]
+
+        # add new random mines
+        for m in xrange(self.mines):            
+            rand_row = random.randint(0, self.rows-1)
+            rand_col = random.randint(0, self.cols-1)
             random_mine = (rand_row, rand_col)            
             if random_mine not in self.mine_locations:                
                 random_mine = (rand_row, rand_col)            
-            	self.cells[rand_row][rand_col].is_mine = True
-            	self.mine_locations.append(random_mine)
+                self.cells[rand_row][rand_col].is_mine = True
+                self.mine_locations.append(random_mine)
 
-        # calculate new neighbor values for each cell
-        for i in xrange(rows):
-            for j in xrange(cols):
-                # get this cell's neighbors
+        # reset cell state and calculate new neighbor values for each cell
+        for i in xrange(self.rows):
+            for j in xrange(self.cols):
                 cell = self.cells[i][j]
                 neighbors = self.get_neighbor_cells(i, j)
                 for n in neighbors:
@@ -66,16 +80,19 @@ class Board:
 
 
 
-    def get_neighbor_cells(self, row, col):
+    def draw(self):
         """
-        This is a static method so it can be called using different boards.
-        Currently the Minesweeper class only stores 1 board, but in the solver
-        we need to get the neighbors of cells in many different board configurations.
-        To call it, use the class not the instance.
-        :param row: row index of the cell whose neighbors we want to retrieve
-        :param col: col index of the cell
-        :param board: instance of the board list of lists of cells
-        :return: list of cell object
+        Draw all cells on the board
+        """
+        for i in xrange(self.rows):
+            for j in xrange(self.cols):
+                # draw the cell
+                self.cells[i][j].draw()
+
+
+    def get_neighbor_cells(self, row, col):
+        """        
+        :return: list of cell objects surrounding cell at (row, col) position
         """
         neighbors = []        
         # calculate rows and columns values for each neighboring cell
@@ -98,25 +115,5 @@ class Board:
                             pass
         return neighbors
 
-
-
-    def draw(self):
-        """
-        Draws self.board in its current state
-        """
-        for i in xrange(self.rows):
-            for j in xrange(self.cols):
-                # draw the cell
-                self.cells[i][j].draw()
-        
-
-
-    def __str__(self):        
-        for i in xrange(self.rows):
-            for j in xrange(self.cols):
-                neighbors = self.get_neighbor_cells(i,j)
-                print self.cells[i][j]
-                for n in neighbors:
-                    print '\t', n
-                print ""
+       
 
