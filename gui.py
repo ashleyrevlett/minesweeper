@@ -7,7 +7,6 @@ import time
 from cell import Cell
 import os
 import solver
-import stats
 from board import Board
 
 
