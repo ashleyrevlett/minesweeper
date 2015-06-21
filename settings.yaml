@@ -1,0 +1,21 @@
+# each cell is 24 x 24, with 2px padding around 20px icon
+# the board has 5px on either side
+# header height is 44px
+easy:
+    rows: 9
+    columns: 9
+    mines: 10
+    width: 226
+    height: 264
+intermediate:
+    rows: 16
+    columns: 16
+    mines: 24
+    width: 394
+    height: 438
+expert:
+    rows: 16
+    columns: 30
+    mines: 48
+    width: 730
+    height: 438

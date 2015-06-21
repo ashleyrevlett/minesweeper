@@ -1,22 +1,33 @@
 import sys
 import time
+import yaml
 import pygame
 from pygame.locals import *  # for keypress constants
 from cell import Cell
 from board import Board
 from gui import Gui
 import solver
+import colors
 
 
 class Minesweeper(object):
     """
     Main game application
     """
-    def __init__(self, width, height, rows, cols, mines, use_ai, total_games):
+    def __init__(self, difficulty, use_ai, total_games):
 
+        # read settings file
+        with open('settings.yaml', 'r') as f:
+            settings = yaml.load(f)            
+            self.rows = settings[difficulty]["rows"]
+            self.cols = settings[difficulty]["columns"]
+            self.mines = settings[difficulty]["mines"]
+            self.width = settings[difficulty]["width"]
+            self.height = settings[difficulty]["height"]
+            self.size = self.width, self.height
+        
         # pygame setup
-        self._running = True # used to stop game loop
-        self.size = self.width, self.height = width, height
+        self._running = True # used to stop game loop        
         self.screen = self.setup_screen()
 
         # scorekeeping
@@ -27,15 +38,13 @@ class Minesweeper(object):
         self.won_game = False
 
         # game board setup        
-        self.rows = rows
-        self.cols = cols
-        self.mines = mines
+
 
         # AI / autoplay
         self.use_ai = use_ai        
 
         # create board and gui 
-        self.board = Board(width, height, rows, cols, mines, self.screen, 44)    
+        self.board = Board(self.width, self.height, self.rows, self.cols, self.mines, self.screen, 36)    
         self.gui = Gui(self.board, self)
 
         # autoplay or enter event loop        
@@ -94,7 +103,6 @@ class Minesweeper(object):
                 self.board.cells[i][j].flagged = False
             else:
                 self.board.cells[i][j].flagged = True
-        print "testing if won:", self.test_did_win()
         if self.test_did_win():
             self.game_over()
 
@@ -148,7 +156,8 @@ class Minesweeper(object):
         :return: pygame screen object
         """
         pygame.init()
-        screen = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
+        screen = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)       
+        screen.fill(colors.bg_gray)        
         pygame.display.flip()
         return screen
 
@@ -197,7 +206,7 @@ class Minesweeper(object):
                     x,y = event.pos
                     if self.gui.button_icon.rect.collidepoint(x,y):
                         self.reset_game()
-                    if self.gui.auto_button.collidepoint(x,y):
+                    if self.gui.auto_icon.rect.collidepoint(x,y):
                         self.autoplay(total_games)
                         self.reset_game()
                     else:
@@ -232,6 +241,10 @@ class Minesweeper(object):
 
 
     def draw(self):
+        # Fill background
+        background = pygame.Surface(self.screen.get_size())
+        background = background.convert()
+        background.fill(colors.gray) 
         self.board.draw()
         self.gui.draw() # update scoreboard
         pygame.display.flip() # update screen
@@ -273,31 +286,27 @@ class Minesweeper(object):
 
 if __name__ == "__main__":
 
-    # default settings
-    width = 400
-    height = 444
-    rows = 8
-    cols = 8
-    mines = 5
+    # defaults
+    difficulty = "easy"
     use_ai = False
     total_games = 5
 
     # command line args override defaults
     if len(sys.argv) > 1:
-        width = int(sys.argv[1])
-    if len(sys.argv) > 2:
-        height = int(sys.argv[2])
-    if len(sys.argv) > 3:
-        rows = int(sys.argv[3])
-    if len(sys.argv) > 4:
-        cols = int(sys.argv[4])
-    if len(sys.argv) > 5:
-        mines = int(sys.argv[5])
-    if len(sys.argv) > 6:
-        if (sys.argv[6] == 'T' or sys.argv[6] == 't'):
-            use_ai = True
-    if len(sys.argv) > 7:
-        total_games = int(sys.argv[7])
-    
-    app = Minesweeper(width, height, rows, cols, mines, use_ai, total_games)
+        difficulty = sys.argv[1].lower()
+        if not (difficulty == "easy" or difficulty == "intermediate" or difficulty == "expert"):
+            print """
+            Error in command line arguments.
+            Usage: python minesweeper.py difficulty use_ai total_games
+            \tdifficulty - easy, intermediate, expert
+            \tuse_ai - t or f
+            \ttotal_games - integer\n"""
+            exit()
 
+    if len(sys.argv) > 2:
+        if (sys.argv[2].lower() == 't'):
+            use_ai = True
+    if len(sys.argv) > 3:
+        total_games = max(1, int(sys.argv[3])) # at least 1 game
+    
+    app = Minesweeper(difficulty, use_ai, total_games)

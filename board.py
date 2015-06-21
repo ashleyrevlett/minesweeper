@@ -18,11 +18,8 @@ class Board(object):
         self.mines = mines
         self.mine_locations = []
         self.cell_margin = 0
-
-        # calculate size of cells
-        cell_size_w = int((self.width - (self.cols * self.cell_margin)) / self.cols)
-        cell_size_h = int(((self.height) - header_height - (rows * self.cell_margin)) / self.rows)
-        self.cell_size = min(cell_size_h, cell_size_w)
+        self.cell_size = 24
+        self.board_padding = 5
 
         # board object
         self.cells = [[None for i in xrange(self.cols)] for i in xrange(self.rows)]
@@ -41,8 +38,8 @@ class Board(object):
             for j in xrange(self.cols):
                 cell = Cell(i, j, self.screen)
                 # cell.revealed = True
-                ypos = (self.cell_size * i) + (self.cell_margin * i) + self.header_height
-                xpos = (self.cell_size * j) + (self.cell_margin * j)
+                ypos = self.board_padding + (self.cell_size * i) + (self.cell_margin * i) + self.header_height
+                xpos = self.board_padding + (self.cell_size * j) + (self.cell_margin * j)
                 rect = Rect(xpos, ypos, self.cell_size, self.cell_size)
                 cell.rect = rect
                 self.cells[i][j] = cell

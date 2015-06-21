@@ -11,9 +11,9 @@ from board import Board
 class Gui(object):
 
     def __init__(self, board, game):
-        self.header_height = 44
+        self.header_height = 36
         self.button_icon = None
-        self.auto_button = None
+        self.auto_icon = None
         self.board = board
         self.game = game
 
@@ -22,14 +22,22 @@ class Gui(object):
 
 
     def draw(self):
+
+        # draw labels
+        font_color = red
+        font_size = 30
+        text_inset = 5
+
         # draw bg rect
         score_rect = Rect(0, 0, self.board.width, self.header_height)
         pygame.draw.rect(self.board.screen, bg_gray, score_rect, 0)
 
-        # draw labels
-        font_color = red
-        font_size = 34
-        text_inset = 5
+        score_rect_bg = Rect(text_inset-2, text_inset-1, 50, 32)
+        pygame.draw.rect(self.board.screen, black, score_rect_bg, 0)
+
+        timer_rect_bg = Rect(self.board.width - (text_inset+52), text_inset-1, 50, 32)
+        pygame.draw.rect(self.board.screen, black, timer_rect_bg, 0)
+
 
         # need to get absolute pathname for font file
         path = os.path.join(self.filepath, "assets/fonts/DS-DIGIB.ttf")
@@ -45,12 +53,13 @@ class Gui(object):
         time_label = label_font.render(time_text, 1, font_color)
         self.board.screen.blit(time_label, (self.board.width - (text_inset+50), text_inset))
 
-        # buttons
-        self.auto_button = Rect(70, 10, 100, 25)
-        pygame.draw.rect(self.board.screen, bg_gray_dark, self.auto_button)        
-        auto_font = pygame.font.Font(path, 20)
-        auto_label = auto_font.render("Autoplay", 1, black)
-        self.board.screen.blit(auto_label, (80,12))
+        # buttons        
+        self.auto_icon = pygame.sprite.Sprite() # create sprite
+        auto_icon_path = os.path.join(self.filepath, "assets/images/play_20.png")
+        self.auto_icon.image = pygame.image.load(auto_icon_path).convert() # load flagimage
+        self.auto_icon.rect = self.auto_icon.image.get_rect() # use image extent values
+        self.auto_icon.rect.topleft = (60,5)
+        self.board.screen.blit(self.auto_icon.image, self.auto_icon.rect)
 
         # draw the playing, winning or losing icon
         if self.game.lost_game:
